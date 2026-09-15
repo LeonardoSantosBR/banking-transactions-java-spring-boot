@@ -123,3 +123,7 @@ transactions (1) ──< outbox_events (N)
 ## Tabela de controle (gerada automaticamente pelo Flyway)
 
 `flyway_schema_history` — não faz parte do domínio da aplicação; é criada e mantida pelo próprio Flyway para registrar quais migrations já foram aplicadas e quando.
+
+## RabbitMQ 
+o RabbitMQ simula o SPI (Sistema de Pagamentos Instantâneos) do Banco Central — o "meio de campo" assíncrono entre o momento em que o pagamento é solicitado e o momento em que ele é efetivamente liquidado. A ideia é reproduzir o comportamento real do Pix: a requisição HTTP responde rápido (202 Accepted), mas a liquidação de fato acontece em segundo plano, com uma latência simulada.
+Por que usar uma fila em vez de só chamar um método direto: desacopla a parte síncrona (responder rápido pro cliente) da parte assíncrona (processamento que pode demorar, falhar e precisar de retry) — exatamente como o Pix real funciona, onde o banco pagador não fica bloqueado esperando o Banco Central confirmar.
