@@ -1,6 +1,8 @@
 package leonardo.pix_simulation.services;
 
 import leonardo.pix_simulation.entities.UsersEntity;
+import leonardo.pix_simulation.exceptions.EmailOrCpfAlreadyRegisteredException;
+import leonardo.pix_simulation.exceptions.UserNotFoundException;
 import leonardo.pix_simulation.repositories.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +34,7 @@ public class UsersService {
     @Transactional(readOnly = true)
     public UsersEntity findById(UUID id) {
         return usersRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("User not found: " + id));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Transactional
@@ -64,11 +66,11 @@ public class UsersService {
                 : usersRepository.existsByEmailAndIdNot(user.getEmail(), currentUserId);
 
         if (cpfAlreadyExists) {
-            throw new IllegalArgumentException("CPF already registered");
+            throw new EmailOrCpfAlreadyRegisteredException("CPF", user.getCpf());
         }
 
         if (emailAlreadyExists) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new EmailOrCpfAlreadyRegisteredException("EMAIL", user.getEmail());
         }
     }
 }
