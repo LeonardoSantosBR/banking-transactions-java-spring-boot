@@ -1,6 +1,10 @@
 package leonardo.pix_simulation.controllers;
 
 import leonardo.pix_simulation.entities.UsersEntity;
+import leonardo.pix_simulation.dtos.UserCreateRequest;
+import leonardo.pix_simulation.dtos.UserResponse;
+import leonardo.pix_simulation.dtos.UserUpdateRequest;
+import jakarta.validation.Valid;
 import leonardo.pix_simulation.services.UsersService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,33 +32,33 @@ public class UsersController {
     }
 
     @PostMapping
-    public ResponseEntity<UsersEntity> create(@RequestBody UsersEntity user) {
-        UsersEntity createdUser = usersService.create(user);
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
+        UsersEntity createdUser = usersService.create(request);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(createdUser.getId())
                 .toUri();
 
-        return ResponseEntity.created(location).body(createdUser);
+        return ResponseEntity.created(location).body(UserResponse.from(createdUser));
     }
 
     @GetMapping
-    public ResponseEntity<List<UsersEntity>> findAll() {
-        return ResponseEntity.ok(usersService.findAllActive());
+    public ResponseEntity<List<UserResponse>> findAll() {
+        return ResponseEntity.ok(usersService.findAllActive().stream().map(UserResponse::from).toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsersEntity> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(usersService.findById(id));
+    public ResponseEntity<UserResponse> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(UserResponse.from(usersService.findById(id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsersEntity> update(
+    public ResponseEntity<UserResponse> update(
             @PathVariable UUID id,
-            @RequestBody UsersEntity user
+            @Valid @RequestBody UserUpdateRequest request
     ) {
-        return ResponseEntity.ok(usersService.update(id, user));
+        return ResponseEntity.ok(UserResponse.from(usersService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")

@@ -3,9 +3,15 @@ package leonardo.pix_simulation.services;
 import leonardo.pix_simulation.entities.UsersEntity;
 import leonardo.pix_simulation.exceptions.EmailOrCpfAlreadyRegisteredException;
 import leonardo.pix_simulation.exceptions.UserNotFoundException;
+import leonardo.pix_simulation.exceptions.InvalidCredentialsException;
+import leonardo.pix_simulation.dtos.LoginRequest;
+import leonardo.pix_simulation.dtos.LoginResponse;
+import leonardo.pix_simulation.dtos.UserCreateRequest;
+import leonardo.pix_simulation.dtos.UserUpdateRequest;
 import leonardo.pix_simulation.repositories.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -15,13 +21,20 @@ import java.util.UUID;
 public class UsersService {
     
     private final UsersRepository usersRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public UsersService(UsersRepository usersRepository) {
+    public UsersService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.usersRepository = usersRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
-    public UsersEntity create(UsersEntity user) {
+    public UsersEntity create(UserCreateRequest request) {
+        UsersEntity user = new UsersEntity();
+        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
         validateUniqueFields(user, null);
         return usersRepository.save(user);
     }
@@ -45,8 +58,29 @@ public class UsersService {
         currentUser.setName(user.getName());
         currentUser.setCpf(user.getCpf());
         currentUser.setEmail(user.getEmail());
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            currentUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
 
         return usersRepository.save(currentUser);
+    }
+
+    @Transactional
+    public UsersEntity update(UUID id, UserUpdateRequest request) {
+        UsersEntity user = new UsersEntity();
+        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email());
+        user.setPassword(request.password());
+        return update(id, user);
+    }
+
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest request) {
+        UsersEntity user = usersRepository.findByCpfAndDeletedAtIsNull(request.cpf())
+                .orElseThrow(InvalidCredentialsException::new);
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+        return new LoginResponse(jwtService.generateToken(user));
     }
 
     @Transactional
