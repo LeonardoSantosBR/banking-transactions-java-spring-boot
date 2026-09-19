@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,6 +38,10 @@ public class UsersEntity {
 
     @Column(nullable = false, length = 150, unique = true)
     private String email;
+
+    @Column(nullable = false, length = 255)
+    @JsonIgnore
+    private String password;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
