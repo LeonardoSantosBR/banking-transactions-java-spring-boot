@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>leonardo</groupId>
-	<artifactId>pix-simulation</artifactId>
+	<artifactId>banking-transactions</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>Banking Transactions</name>
+	<description>Banking transactions application</description>
 	<url/>
 	<licenses>
 		<license/>
