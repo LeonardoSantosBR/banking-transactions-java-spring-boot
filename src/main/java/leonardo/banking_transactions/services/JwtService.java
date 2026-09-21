@@ -1,6 +1,7 @@
 package leonardo.banking_transactions.services;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import leonardo.banking_transactions.entities.UsersEntity;
@@ -11,6 +12,7 @@ import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -28,5 +30,20 @@ public class JwtService {
         return Jwts.builder().subject(user.getId().toString()).claim("cpf", user.getCpf())
                 .issuedAt(Date.from(now)).expiration(Date.from(now.plus(expiration)))
                 .signWith(key).compact();
+    }
+
+    public UUID extractUserId(String token) {
+        String subject = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+
+        if (subject == null || subject.isBlank()) {
+            throw new JwtException("JWT subject is missing");
+        }
+
+        return UUID.fromString(subject);
     }
 }
