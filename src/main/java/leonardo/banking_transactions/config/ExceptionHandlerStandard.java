@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class ExceptionHandlerStandard {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
