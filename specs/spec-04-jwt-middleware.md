@@ -114,6 +114,31 @@ Quando o JWT for válido, mas o `subject` for diferente do `{id}` da URL, retorn
 
 Adicionar testes para token ausente, formato inválido, expiração, assinatura inválida, `subject` inválido, usuário próprio, usuário diferente, rotas públicas e garantia de que requisições rejeitadas não chegam ao controller.
 
+## Atualização: tratamento de falhas de autenticação
+
+As falhas identificadas no `JwtAuthenticationMiddleware` são encaminhadas
+para o `JwtAuthenticationEntryPoint`, utilizando o Spring Security para
+interromper a requisição e retornar `401 Unauthorized`.
+
+O `JwtInvalidOrMissingException` continua representando tokens ausentes,
+expirados, malformados ou inválidos. A mensagem é encaminhada dinamicamente
+pelo `AuthenticationException` e inclui­da no campo `message` da resposta JSON.
+
+Exemplo:
+
+```json
+{
+  "timestamp": "2026-09-24T14:43:55.140Z",
+  "status": 401,
+  "error": "Unauthorized",
+  "message": "Invalid or missing JWT",
+  "path": "/api/accounts/{id}"
+}
+```
+
+O `JwtAuthenticationEntryPoint` escreve explicitamente a resposta JSON,
+evitando que o tratamento padrão do Spring Boot omita a mensagem personalizada.
+
 ## Fora do escopo
 
 - refresh token;

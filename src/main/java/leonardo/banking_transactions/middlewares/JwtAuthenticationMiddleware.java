@@ -5,11 +5,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import leonardo.banking_transactions.config.JwtAuthenticationEntryPoint;
 import leonardo.banking_transactions.exceptions.JwtInvalidOrMissingException;
 import leonardo.banking_transactions.exceptions.UserNotAllowedException;
 import leonardo.banking_transactions.services.JwtService;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.io.IOException;
 import java.util.Set;
@@ -25,9 +28,14 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
     private static final String USERS_PATH = "/api/users/";
     private static final String ACCOUNTS_PATH = "/api/accounts/";
     private final JwtService jwtService;
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
 
-    public JwtAuthenticationMiddleware(JwtService jwtService) {
+    public JwtAuthenticationMiddleware(
+            JwtService jwtService,
+            JwtAuthenticationEntryPoint authenticationEntryPoint) {
+
         this.jwtService = jwtService;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
     @Override
@@ -44,14 +52,14 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        String authorization = request.getHeader("Authorization");
-
-        if (authorization == null || !authorization.startsWith("Bearer ")
-                || authorization.substring(7).isBlank()) {
-            throw new UserNotAllowedException();
-        }
-
         try {
+            String authorization = request.getHeader("Authorization");
+
+            if (authorization == null || !authorization.startsWith("Bearer ")
+                    || authorization.substring(7).isBlank()) {
+                throw new UserNotAllowedException();
+            }
+
             UUID tokenUserId = jwtService.extractUserId(authorization.substring(7).trim());
             String path = request.getRequestURI().substring(request.getContextPath().length());
             String resourcePath = path.startsWith(USERS_PATH) ? USERS_PATH
@@ -65,10 +73,31 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
                     throw new UserNotAllowedException();
                 }
             }
-
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException exception) {
-            throw new JwtInvalidOrMissingException();
+            handleAuthenticationFailure(
+                    request,
+                    response,
+                    new JwtInvalidOrMissingException().getMessage(),
+                    exception);
+        } catch (UserNotAllowedException exception) {
+            handleAuthenticationFailure(
+                    request,
+                    response,
+                    exception.getMessage(),
+                    exception);
         }
+    }
+
+    private void handleAuthenticationFailure(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String message,
+            Exception cause) throws IOException {
+
+        authenticationEntryPoint.commence(
+                request,
+                response,
+                new BadCredentialsException(message, cause));
     }
 }
