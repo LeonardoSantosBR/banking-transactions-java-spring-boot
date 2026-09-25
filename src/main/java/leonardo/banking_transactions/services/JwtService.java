@@ -39,11 +39,9 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
-
         if (subject == null || subject.isBlank()) {
             throw new JwtException("JWT subject is missing");
         }
-
         return UUID.fromString(subject);
     }
 }

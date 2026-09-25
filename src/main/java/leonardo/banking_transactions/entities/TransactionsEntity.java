@@ -56,6 +56,21 @@ public class TransactionsEntity {
     @Column(name = "pix_key_used", nullable = false, length = 150)
     private String pixKeyUsed;
 
+    @Column(name = "qr_code_type", length = 20)
+    private String qrCodeType;
+
+    @Column(name = "qr_code_payload", columnDefinition = "TEXT")
+    private String qrCodePayload;
+
+    @Column(length = 100)
+    private String txid;
+
+    @Column(nullable = false, length = 3)
+    private String currency = "BRL";
+
+    @Column(length = 30)
+    private String channel;
+
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
 

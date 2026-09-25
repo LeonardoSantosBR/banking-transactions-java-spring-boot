@@ -39,9 +39,9 @@ Uma conta só pode ser criada depois que o usuário existir, pois `accounts.user
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `POST` | `/api/users/{userId}/accounts` | Cria uma conta para o usuário |
-| `GET` | `/api/users/{userId}/accounts` | Lista as contas do usuário |
-| `GET` | `/api/accounts/{id}` | Busca uma conta por ID |
+| `POST` | `/api/accounts/{userId}` | Cria uma conta para o usuário |
+| `GET` | `/api/accounts/{userId}` | Lista as contas do usuário |
+| `GET` | `/api/accounts/{userId}/{accountId}` | Busca uma conta por ID |
 
 ### Regras
 
@@ -57,9 +57,9 @@ Uma conta só pode ser criada depois que o usuário existir, pois `accounts.user
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `POST` | `/api/accounts/{accountId}/pix-keys` | Adiciona uma chave Pix |
-| `GET` | `/api/accounts/{accountId}/pix-keys` | Lista as chaves da conta |
-| `DELETE` | `/api/pix-keys/{id}` | Desativa uma chave Pix |
+| `POST` | `/api/pix-keys/{accountId}` | Adiciona uma chave Pix |
+| `GET` | `/api/pix-keys/{accountId}` | Lista as chaves da conta |
+| `DELETE` | `/api/pix-keys/{accountId}/{id}` | Desativa uma chave Pix |
 
 ### Regras
 
@@ -75,10 +75,10 @@ Uma conta só pode ser criada depois que o usuário existir, pois `accounts.user
 POST /api/users
         |
         v
-POST /api/users/{userId}/accounts
+POST /api/accounts/{userId}
         |
         v
-POST /api/accounts/{accountId}/pix-keys
+POST /api/pix-keys/{accountId}
 ```
 
 ## Camadas sugeridas

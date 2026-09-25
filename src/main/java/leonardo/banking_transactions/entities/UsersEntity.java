@@ -39,6 +39,9 @@ public class UsersEntity {
     @Column(nullable = false, length = 150, unique = true)
     private String email;
 
+    @Column(length = 20)
+    private String phone;
+
     @Column(nullable = false, length = 255)
     @JsonIgnore
     private String password;

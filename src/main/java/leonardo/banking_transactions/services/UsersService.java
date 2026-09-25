@@ -33,7 +33,7 @@ public class UsersService {
     @Transactional
     public UsersEntity create(UserCreateRequest request) {
         UsersEntity user = new UsersEntity();
-        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email());
+        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email()); user.setPhone(request.phone());
         user.setPassword(passwordEncoder.encode(request.password()));
         validateUniqueFields(user, null);
         return usersRepository.save(user);
@@ -54,10 +54,10 @@ public class UsersService {
     public UsersEntity update(UUID id, UsersEntity user) {
         UsersEntity currentUser = findById(id);
         validateUniqueFields(user, id);
-
         currentUser.setName(user.getName());
         currentUser.setCpf(user.getCpf());
         currentUser.setEmail(user.getEmail());
+        currentUser.setPhone(user.getPhone());
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             currentUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
@@ -68,7 +68,7 @@ public class UsersService {
     @Transactional
     public UsersEntity update(UUID id, UserUpdateRequest request) {
         UsersEntity user = new UsersEntity();
-        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email());
+        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email()); user.setPhone(request.phone());
         user.setPassword(request.password());
         return update(id, user);
     }
@@ -94,15 +94,12 @@ public class UsersService {
         boolean cpfAlreadyExists = currentUserId == null
                 ? usersRepository.existsByCpf(user.getCpf())
                 : usersRepository.existsByCpfAndIdNot(user.getCpf(), currentUserId);
-
         boolean emailAlreadyExists = currentUserId == null
                 ? usersRepository.existsByEmail(user.getEmail())
                 : usersRepository.existsByEmailAndIdNot(user.getEmail(), currentUserId);
-
         if (cpfAlreadyExists) {
             throw new EmailOrCpfAlreadyRegisteredException("CPF", user.getCpf());
         }
-
         if (emailAlreadyExists) {
             throw new EmailOrCpfAlreadyRegisteredException("EMAIL", user.getEmail());
         }

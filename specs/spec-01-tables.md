@@ -14,6 +14,7 @@ Armazena os dados cadastrais da pessoa/cliente dona das contas.
 | `name` | VARCHAR(150) | Nome completo |
 | `cpf` | VARCHAR(11) | CPF, único no sistema |
 | `email` | VARCHAR(150) | E-mail, único no sistema |
+| `phone` | VARCHAR(20) (nullable) | Telefone do usuário; pode ser usado como chave Pix |
 | `created_at` | TIMESTAMPTZ | Data de criação |
 | `updated_at` | TIMESTAMPTZ | Data da última atualização |
 | `deleted_at` | TIMESTAMPTZ (nullable) | Preenchido no soft delete; `NULL` = usuário ativo |
@@ -76,7 +77,12 @@ Livro-razão (ledger) de todas as operações Pix — o registro histórico e au
 | `payer_account_id` | UUID (FK → `accounts.id`) | Conta pagadora |
 | `payee_account_id` | UUID (FK → `accounts.id`) | Conta recebedora |
 | `pix_key_used` | VARCHAR(150) | Snapshot da chave usada no momento do pagamento (não é FK, para preservar histórico mesmo se a chave for desativada depois) |
+| `qr_code_type` | VARCHAR(20) (nullable) | Tipo de QR Code usado (`STATIC`, `DYNAMIC` ou `COPY_AND_PASTE`) |
+| `qr_code_payload` | TEXT (nullable) | Conteúdo original do QR Code ou Pix Copia e Cola |
+| `txid` | VARCHAR(100) (nullable) | Identificador da cobrança/QR Code |
 | `amount` | DECIMAL(19,4) | Valor transferido |
+| `currency` | VARCHAR(3) | Moeda da transação, padrão `BRL` |
+| `channel` | VARCHAR(30) (nullable) | Canal de origem, por exemplo `MOBILE_APP` |
 | `status` | ENUM `transaction_status` (`PROCESSING`, `SETTLED`, `REJECTED`, `REFUNDED`) | Estado atual da transação |
 | `description` | VARCHAR(200) (nullable) | Descrição opcional informada pelo pagador |
 | `created_at` | TIMESTAMPTZ | Data de criação |
@@ -92,7 +98,7 @@ Livro-razão (ledger) de todas as operações Pix — o registro histórico e au
 
 ## 5. `outbox_events`
 
-Implementa o Transactional Outbox Pattern: garante que a gravação da transação e a publicação do evento no RabbitMQ aconteçam de forma atômica, evitando o problema de dual-write.
+Implementa o Transactional Outbox Pattern: garante que a gravação da transação e o encaminhamento do evento para o Amazon SQS sejam confiáveis, evitando o problema de dual-write.
 
 | Coluna | Tipo | Descrição |
 |---|---|---|
@@ -102,7 +108,7 @@ Implementa o Transactional Outbox Pattern: garante que a gravação da transaç�
 | `payload` | JSONB | Conteúdo do evento a ser publicado |
 | `status` | ENUM `outbox_event_status` (`PENDING`, `PUBLISHED`, `FAILED`) | Estado da publicação |
 | `created_at` | TIMESTAMPTZ | Data de criação do evento |
-| `published_at` | TIMESTAMPTZ (nullable) | Data em que foi publicado no RabbitMQ |
+| `published_at` | TIMESTAMPTZ (nullable) | Data em que foi enviado ao Amazon SQS |
 
 **Constraints:** nenhuma UNIQUE em `transaction_id` (uma transação pode, no futuro, gerar mais de um evento)
 **Índices:** índice parcial em `(status, created_at)` só para `status = 'PENDING'` — é exatamente a query que o processo `@Scheduled` (outbox publisher) roda repetidamente
@@ -124,6 +130,11 @@ transactions (1) ──< outbox_events (N)
 
 `flyway_schema_history` — não faz parte do domínio da aplicação; é criada e mantida pelo próprio Flyway para registrar quais migrations já foram aplicadas e quando.
 
-## RabbitMQ 
-o RabbitMQ simula o SPI (Sistema de Pagamentos Instantâneos) do Banco Central — o "meio de campo" assíncrono entre o momento em que o pagamento é solicitado e o momento em que ele é efetivamente liquidado. A ideia é reproduzir o comportamento real do Pix: a requisição HTTP responde rápido (202 Accepted), mas a liquidação de fato acontece em segundo plano, com uma latência simulada.
-Por que usar uma fila em vez de só chamar um método direto: desacopla a parte síncrona (responder rápido pro cliente) da parte assíncrona (processamento que pode demorar, falhar e precisar de retry) — exatamente como o Pix real funciona, onde o banco pagador não fica bloqueado esperando o Banco Central confirmar.
+## Amazon SQS
+O Amazon SQS simula o meio assíncrono entre o momento em que o pagamento é solicitado e o momento em que ele é efetivamente liquidado. A requisição HTTP responde rapidamente (`202 Accepted`) e o processamento da liquidação acontece em segundo plano.
+
+A tabela `outbox_events` continua sendo a fonte confiável dos eventos. Um publicador agendado deve buscar eventos `PENDING`, enviá-los à fila SQS e marcar o registro como `PUBLISHED` somente após uma confirmação bem-sucedida do envio. Em caso de falha, o evento permanece disponível para retry.
+
+Na AWS, deve existir uma fila principal e uma Dead Letter Queue (DLQ). O consumidor deve processar as mensagens com idempotência, confirmar a mensagem somente após concluir o processamento e deixar que mensagens com falha sejam reentregues conforme a política de redrive da fila.
+
+O uso do SQS desacopla a resposta HTTP do processamento assíncrono, permitindo latência, falhas e novas tentativas sem bloquear a conta pagadora durante a confirmação do Pix.

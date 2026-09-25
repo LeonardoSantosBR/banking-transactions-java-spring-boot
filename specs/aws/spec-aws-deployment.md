@@ -52,7 +52,7 @@ O código da aplicação deve continuar compatível com o ambiente local. A prin
 - Docker e Docker Compose instalados na EC2.
 - API Spring Boot executando em container.
 - PostgreSQL executando em container.
-- RabbitMQ pode continuar disponível apenas no ambiente local, se necessário durante o desenvolvimento.
+- O Amazon SQS será utilizado tanto no ambiente AWS quanto, quando configurado, nos testes de integração.
 - Uma fila SQS principal e uma Dead Letter Queue para o ambiente AWS.
 - Variáveis de ambiente configuradas fora do código-fonte.
 - Porta HTTP da API liberada no Security Group.
@@ -105,7 +105,7 @@ O SQS será o primeiro serviço gerenciado utilizado pelo projeto. Ele será usa
 - O processamento deve ser idempotente para suportar reentrega da mensagem.
 - A aplicação não deve usar credenciais AWS fixas no código.
 
-O RabbitMQ pode continuar sendo usado localmente para desenvolvimento, mas não será executado na EC2 nesta primeira versão.
+O Amazon SQS será a solução de mensageria da aplicação. No desenvolvimento local, recomenda-se usar uma conta AWS de desenvolvimento ou um emulador compatível, sem introduzir uma dependência de RabbitMQ.
 
 ## 6. Configuração e segredos
 
@@ -130,7 +130,7 @@ O `.env.example` pode ser versionado contendo apenas nomes de variáveis e valor
 
 - Usar uma chave SSH protegida para acessar a EC2.
 - Permitir SSH somente a partir do IP do desenvolvedor.
-- Não liberar publicamente as portas do PostgreSQL e do RabbitMQ.
+- Não liberar publicamente a porta do PostgreSQL.
 - Não usar a conta root para executar a aplicação.
 - Não adicionar chaves AWS ao repositório.
 - Alterar a senha padrão do PostgreSQL antes do deploy.
@@ -147,7 +147,7 @@ O `.env.example` pode ser versionado contendo apenas nomes de variáveis e valor
 - As migrations do Flyway são executadas com sucesso.
 - O login e o cadastro de usuários funcionam pelo endpoint público.
 - As rotas de contas funcionam com JWT.
-- As portas do PostgreSQL e do RabbitMQ não estão abertas para a internet.
+- A porta do PostgreSQL não está aberta para a internet.
 - O arquivo `.env` não está versionado.
 - A aplicação pode ser parada e iniciada novamente sem perder os dados do volume.
 - O README contém as instruções de deploy e desligamento da instância.
