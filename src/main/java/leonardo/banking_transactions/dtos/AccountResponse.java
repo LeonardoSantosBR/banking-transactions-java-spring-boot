@@ -11,8 +11,8 @@ public record AccountResponse(
         String branch,
         String accountNumber,
         BigDecimal balance,
-        Long version
-) {
+        Long version) {
+
     public static AccountResponse from(AccountsEntity account) {
         return new AccountResponse(
                 account.getId(),
@@ -20,7 +20,6 @@ public record AccountResponse(
                 account.getBranch(),
                 account.getAccountNumber(),
                 account.getBalance(),
-                account.getVersion()
-        );
+                account.getVersion());
     }
 }

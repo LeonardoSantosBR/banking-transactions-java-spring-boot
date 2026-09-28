@@ -24,7 +24,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 public class UsersController {
-
     private final UsersService usersService;
 
     public UsersController(UsersService usersService) {
@@ -56,8 +55,7 @@ public class UsersController {
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody UserUpdateRequest request
-    ) {
+            @Valid @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(UserResponse.from(usersService.update(id, request)));
     }
 

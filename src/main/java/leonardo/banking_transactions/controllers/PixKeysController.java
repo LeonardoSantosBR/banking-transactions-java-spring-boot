@@ -13,7 +13,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/pix-keys/{accountId}")
 public class PixKeysController {
-
     private final PixKeysService service;
 
     public PixKeysController(PixKeysService service) {
@@ -24,7 +23,10 @@ public class PixKeysController {
     public ResponseEntity<PixKeyResponse> create(@PathVariable UUID accountId,
             @Valid @RequestBody PixKeyCreateRequest request) {
         var key = service.create(accountId, request);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(key.getId())
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(key.getId())
                 .toUri();
         return ResponseEntity.created(location).body(PixKeyResponse.from(key));
     }
