@@ -30,11 +30,13 @@ public class AccountsController {
     @PostMapping
     public ResponseEntity<AccountResponse> create(
             @PathVariable UUID userId,
-            @Valid @RequestBody AccountCreateRequest request
-    ) {
+            @Valid @RequestBody AccountCreateRequest request) {
         var account = accountsService.create(userId, request);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}").buildAndExpand(account.getId()).toUri();
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(account.getId())
+                .toUri();
         return ResponseEntity.created(location).body(AccountResponse.from(account));
     }
 
@@ -46,15 +48,13 @@ public class AccountsController {
 
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> findById(
-            @PathVariable UUID userId, @PathVariable UUID accountId
-    ) {
+            @PathVariable UUID userId, @PathVariable UUID accountId) {
         return ResponseEntity.ok(AccountResponse.from(accountsService.findById(userId, accountId)));
     }
 
     @DeleteMapping("/{accountId}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID userId, @PathVariable UUID accountId
-    ) {
+            @PathVariable UUID userId, @PathVariable UUID accountId) {
         accountsService.delete(userId, accountId);
         return ResponseEntity.noContent().build();
     }

@@ -38,7 +38,6 @@ public class UsersController {
                 .path("/{id}")
                 .buildAndExpand(createdUser.getId())
                 .toUri();
-
         return ResponseEntity.created(location).body(UserResponse.from(createdUser));
     }
 
