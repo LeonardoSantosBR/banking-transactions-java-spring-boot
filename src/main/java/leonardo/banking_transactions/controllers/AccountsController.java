@@ -32,11 +32,7 @@ public class AccountsController {
             @PathVariable UUID userId,
             @Valid @RequestBody AccountCreateRequest request) {
         var account = accountsService.create(userId, request);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(account.getId())
-                .toUri();
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(account.getId()).toUri();
         return ResponseEntity.created(location).body(AccountResponse.from(account));
     }
 
