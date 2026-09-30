@@ -24,6 +24,36 @@ TransactionsService
 
 A transação e o evento devem ser gravados na mesma transação do banco. Se o SQS estiver indisponível, o evento permanece na Outbox para retry.
 
+### Fluxo implementado
+
+```text
+POST /api/transactions
+        |
+        v
+TransactionsService
+        |
+        +--> Salva transaction
+        |
+        +--> Salva outbox_event como PENDING
+                    |
+                    v
+          OutboxPublisher a cada 5 segundos
+                    |
+                    v
+                SqsService
+                    |
+                    v
+              Fila FIFO do SQS
+                    |
+                    v
+       TransactionEventConsumer a cada 5 segundos
+                    |
+                    v
+       Atualiza saldo e status da transação
+```
+
+O envio e o consumo são processos independentes da requisição HTTP. Se a aplicação estiver desligada, eventos `PENDING` continuam armazenados no banco e serão publicados quando ela voltar.
+
 ## Filas
 
 ```text
@@ -40,6 +70,7 @@ A fila principal deve apontar para a DLQ por meio de uma redrive policy. O `visi
 - `SqsService`: encapsula o AWS SDK.
 - `OutboxPublisher`: busca eventos `PENDING` e envia lotes ao SQS.
 - `TransactionEventConsumer`: processa mensagens e atualiza transações.
+- `BalanceService`: debita a conta pagadora e credita a conta recebedora.
 
 ## Publicação
 
@@ -61,9 +92,13 @@ Se ocorrer falha depois do envio e antes da atualização do banco, o evento pod
 
 Para FIFO, usar `MessageDeduplicationId = eventId` e `MessageGroupId = payerAccountId`. Mensagens do mesmo grupo serão processadas em ordem; grupos diferentes podem ser processados em paralelo.
 
+O `OutboxPublisher` usa no máximo 10 eventos por lote e mantém o evento como `PENDING` quando o envio falha. O próximo ciclo poderá tentar publicá-lo novamente.
+
 ## Consumidor
 
 O consumidor deve validar a mensagem, consultar a transação, verificar seu status atual, aplicar a transição permitida e excluir a mensagem somente após sucesso. Em falha, a mensagem deve reaparecer após o `visibility timeout`.
+
+O consumidor utiliza long polling, recebe até 10 mensagens e configura visibility timeout de 60 segundos. A mensagem só é removida depois que o processamento termina com sucesso.
 
 Transições esperadas:
 
@@ -74,6 +109,28 @@ SETTLED -> REFUNDED
 ```
 
 Mensagens duplicadas devem ser ignoradas usando `eventId`, `transactionId`, `idempotencyKey` e o status atual da transação.
+
+### Liquidação e saldo
+
+Quando a mensagem é processada com sucesso:
+
+```text
+Conta pagadora: saldo - amount
+Conta recebedora: saldo + amount
+Transação: PROCESSING -> SETTLED
+```
+
+Essa alteração ocorre dentro da mesma transação do PostgreSQL. O `@Version` de `accounts` fornece lock otimista para evitar sobrescrita de saldo em concorrência.
+
+Se a conta pagadora não possuir saldo suficiente:
+
+```text
+Conta pagadora: sem alteração
+Conta recebedora: sem alteração
+Transação: PROCESSING -> REJECTED
+```
+
+Se o status já não for `PROCESSING`, o consumidor considera a mensagem duplicada, não altera o saldo novamente e remove a mensagem da fila.
 
 ## Segurança
 
@@ -92,3 +149,18 @@ Permissões mínimas esperadas: `sqs:SendMessage`, `sqs:ReceiveMessage`, `sqs:De
 7. Implementar publisher agendado.
 8. Implementar consumidor.
 9. Testar publicação, retry, duplicidade e DLQ.
+
+## Status da implementação
+
+Os seguintes itens já estão implementados:
+
+- Configuração do `SqsClient` com região `us-east-1`.
+- Fila FIFO principal e DLQ FIFO.
+- `SqsService` para envio, recebimento e exclusão de mensagens.
+- `OutboxEventsRepository` e `OutboxEventsService`.
+- Criação atômica de transaction e `outbox_event`.
+- `OutboxPublisher` agendado.
+- `TransactionEventConsumer` agendado.
+- Processamento idempotente de transações.
+- Débito do pagador e crédito do recebedor.
+- Rejeição automática por saldo insuficiente.
