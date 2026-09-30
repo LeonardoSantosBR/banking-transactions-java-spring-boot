@@ -1,6 +1,8 @@
 package leonardo.banking_transactions.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import leonardo.banking_transactions.entities.OutboxEventsEntity;
+import leonardo.banking_transactions.entities.TransactionsEntity;
 import leonardo.banking_transactions.enums.OutboxEventStatusEnum;
 import leonardo.banking_transactions.repositories.OutboxEventsRepository;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,16 @@ public class OutboxEventsService {
         if (batchSize < 1) throw new IllegalArgumentException("Batch size must be greater than zero");
         return repository.findByStatusOrderByCreatedAtAsc(
                 OutboxEventStatusEnum.PENDING, PageRequest.of(0, batchSize));
+    }
+
+    @Transactional
+    public OutboxEventsEntity create(TransactionsEntity transaction, String eventType, JsonNode payload) {
+        var event = new OutboxEventsEntity();
+        event.setTransaction(transaction);
+        event.setEventType(eventType);
+        event.setPayload(payload);
+        event.setStatus(OutboxEventStatusEnum.PENDING);
+        return repository.save(event);
     }
 
     @Transactional

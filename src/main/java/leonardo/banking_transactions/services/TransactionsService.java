@@ -1,5 +1,7 @@
 package leonardo.banking_transactions.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import leonardo.banking_transactions.dtos.TransactionCreateRequest;
 import leonardo.banking_transactions.dtos.TransactionUpdateRequest;
 import leonardo.banking_transactions.entities.TransactionsEntity;
@@ -13,17 +15,22 @@ import java.util.UUID;
 
 @Service
 public class TransactionsService {
-    private final TransactionsRepository repository;
+    private final TransactionsRepository transactionsRepository;
     private final AccountsRepository accountsRepository;
+    private final OutboxEventsService outboxEventsService;
+    private final ObjectMapper objectMapper;
 
-    public TransactionsService(TransactionsRepository repository, AccountsRepository accountsRepository) {
-        this.repository = repository;
+    public TransactionsService(TransactionsRepository transactionsRepository, AccountsRepository accountsRepository,
+            OutboxEventsService outboxEventsService, ObjectMapper objectMapper) {
+        this.transactionsRepository = transactionsRepository;
         this.accountsRepository = accountsRepository;
+        this.outboxEventsService = outboxEventsService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
     public TransactionsEntity create(TransactionCreateRequest request) {
-        if (repository.existsByIdempotencyKey(request.idempotencyKey()))
+        if (transactionsRepository.existsByIdempotencyKey(request.idempotencyKey()))
             throw new TransactionAlreadyRegisteredException(request.idempotencyKey());
         if (request.payerAccountId().equals(request.payeeAccountId()))
             throw new InvalidTransactionException("Payer and payee accounts must be different");
@@ -44,17 +51,27 @@ public class TransactionsService {
         t.setCurrency(request.currency() == null ? "BRL" : request.currency());
         t.setChannel(request.channel());
         t.setDescription(request.description());
-        return repository.save(t);
+        var transaction = transactionsRepository.save(t);
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("amount", transaction.getAmount());
+        payload.put("currency", transaction.getCurrency());
+        payload.put("pixKeyUsed", transaction.getPixKeyUsed());
+        payload.put("payerAccountId", payer.getId().toString());
+        payload.put("payeeAccountId", payee.getId().toString());
+        payload.put("qrCodeType", transaction.getQrCodeType());
+        payload.put("txid", transaction.getTxid());
+        outboxEventsService.create(transaction, "PixTransactionRequested", payload);
+        return transaction;
     }
 
     @Transactional(readOnly = true)
     public List<TransactionsEntity> findAll() {
-        return repository.findAll();
+        return transactionsRepository.findAll();
     }
 
     @Transactional(readOnly = true)
     public TransactionsEntity findById(UUID id) {
-        return repository.findById(id).orElseThrow(() -> new TransactionNotFoundException(id));
+        return transactionsRepository.findById(id).orElseThrow(() -> new TransactionNotFoundException(id));
     }
 
     @Transactional
@@ -62,11 +79,11 @@ public class TransactionsService {
         var t = findById(id);
         t.setStatus(request.status());
         t.setDescription(request.description());
-        return repository.save(t);
+        return transactionsRepository.save(t);
     }
 
     @Transactional
     public void delete(UUID id) {
-        repository.delete(findById(id));
+        transactionsRepository.delete(findById(id));
     }
 }
