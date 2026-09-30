@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import leonardo.banking_transactions.dtos.TransactionCreateRequest;
 import leonardo.banking_transactions.dtos.TransactionUpdateRequest;
 import leonardo.banking_transactions.entities.TransactionsEntity;
+import leonardo.banking_transactions.enums.TransactionStatusEnum;
 import leonardo.banking_transactions.exceptions.*;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.TransactionsRepository;
@@ -85,5 +86,16 @@ public class TransactionsService {
     @Transactional
     public void delete(UUID id) {
         transactionsRepository.delete(findById(id));
+    }
+
+    @Transactional
+    public void processSettlement(UUID id, boolean rejected) {
+        var transaction = transactionsRepository.findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+        if (transaction.getStatus() != TransactionStatusEnum.PROCESSING) {
+            return;
+        }
+        transaction.setStatus(rejected ? TransactionStatusEnum.REJECTED : TransactionStatusEnum.SETTLED);
+        transactionsRepository.save(transaction);
     }
 }

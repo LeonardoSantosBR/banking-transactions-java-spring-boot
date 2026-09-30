@@ -8,6 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
+
+import java.util.List;
 
 @Service
 public class SqsService {
@@ -41,5 +46,21 @@ public class SqsService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Could not serialize outbox event", exception);
         }
+    }
+
+    public List<Message> receiveTransactionEvents(int maxMessages, int waitTimeSeconds) {
+        return sqsClient.receiveMessage(ReceiveMessageRequest.builder()
+                .queueUrl(transactionQueueUrl)
+                .maxNumberOfMessages(maxMessages)
+                .waitTimeSeconds(waitTimeSeconds)
+                .visibilityTimeout(60)
+                .build()).messages();
+    }
+
+    public void deleteTransactionEvent(Message message) {
+        sqsClient.deleteMessage(DeleteMessageRequest.builder()
+                .queueUrl(transactionQueueUrl)
+                .receiptHandle(message.receiptHandle())
+                .build());
     }
 }
