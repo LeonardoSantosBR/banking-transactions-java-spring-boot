@@ -24,7 +24,8 @@ public class OutboxEventsService {
 
     @Transactional(readOnly = true)
     public List<OutboxEventsEntity> findPending(int batchSize) {
-        if (batchSize < 1) throw new IllegalArgumentException("Batch size must be greater than zero");
+        if (batchSize < 1)
+            throw new IllegalArgumentException("Batch size must be greater than zero");
         return repository.findByStatusOrderByCreatedAtAsc(
                 OutboxEventStatusEnum.PENDING, PageRequest.of(0, batchSize));
     }

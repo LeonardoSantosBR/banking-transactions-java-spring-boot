@@ -20,13 +20,15 @@ public class TransactionsService {
     private final AccountsRepository accountsRepository;
     private final OutboxEventsService outboxEventsService;
     private final ObjectMapper objectMapper;
+    private final BalanceService balanceService;
 
     public TransactionsService(TransactionsRepository transactionsRepository, AccountsRepository accountsRepository,
-            OutboxEventsService outboxEventsService, ObjectMapper objectMapper) {
+            OutboxEventsService outboxEventsService, ObjectMapper objectMapper, BalanceService balanceService) {
         this.transactionsRepository = transactionsRepository;
         this.accountsRepository = accountsRepository;
         this.outboxEventsService = outboxEventsService;
         this.objectMapper = objectMapper;
+        this.balanceService = balanceService;
     }
 
     @Transactional
@@ -90,12 +92,19 @@ public class TransactionsService {
 
     @Transactional
     public void processSettlement(UUID id, boolean rejected) {
-        var transaction = transactionsRepository.findById(id)
+        var transaction = transactionsRepository
+                .findById(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
-        if (transaction.getStatus() != TransactionStatusEnum.PROCESSING) {
+        if (transaction.getStatus() != TransactionStatusEnum.PROCESSING)
             return;
+        if (rejected) {
+            transaction.setStatus(TransactionStatusEnum.REJECTED);
+        } else if (balanceService.transfer(transaction.getPayerAccount(), transaction.getPayeeAccount(), transaction.getAmount())) {
+            transaction.setStatus(TransactionStatusEnum.SETTLED);
+        } else {
+            transaction.setStatus(TransactionStatusEnum.REJECTED);
+            transaction.setDescription("Rejected: insufficient balance");
         }
-        transaction.setStatus(rejected ? TransactionStatusEnum.REJECTED : TransactionStatusEnum.SETTLED);
         transactionsRepository.save(transaction);
     }
 }

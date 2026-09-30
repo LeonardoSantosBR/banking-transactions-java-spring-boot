@@ -25,9 +25,8 @@ public class AccountsService {
 
     @Transactional
     public AccountsEntity create(UUID userId, AccountCreateRequest request) {
-        if (accountsRepository.existsByBranchAndAccountNumber(request.branch(), request.accountNumber())) {
+        if (accountsRepository.existsByBranchAndAccountNumber(request.branch(), request.accountNumber()))
             throw new AccountAlreadyRegisteredException(request.branch(), request.accountNumber());
-        }
 
         AccountsEntity account = new AccountsEntity();
         account.setUser(usersRepository.findByIdAndDeletedAtIsNull(userId)

@@ -27,7 +27,8 @@ public class JwtService {
 
     public String generateToken(UsersEntity user) {
         Instant now = Instant.now();
-        return Jwts.builder().subject(user.getId().toString()).claim("cpf", user.getCpf())
+        return Jwts.builder()
+                .subject(user.getId().toString()).claim("cpf", user.getCpf())
                 .issuedAt(Date.from(now)).expiration(Date.from(now.plus(expiration)))
                 .signWith(key).compact();
     }
@@ -39,9 +40,8 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
-        if (subject == null || subject.isBlank()) {
+        if (subject == null || subject.isBlank())
             throw new JwtException("JWT subject is missing");
-        }
         return UUID.fromString(subject);
     }
 }

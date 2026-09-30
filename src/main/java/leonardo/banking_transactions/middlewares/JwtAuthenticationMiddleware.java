@@ -23,7 +23,7 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
 
     private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
             "POST /api/users",
-            "GET /api/users",
+            "GET  /api/users",
             "POST /api/auth/login");
     private static final String USERS_PATH = "/api/users/";
     private static final String ACCOUNTS_PATH = "/api/accounts/";
@@ -55,10 +55,8 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
         try {
             String authorization = request.getHeader("Authorization");
 
-            if (authorization == null || !authorization.startsWith("Bearer ")
-                    || authorization.substring(7).isBlank()) {
+            if (authorization == null || !authorization.startsWith("Bearer ") || authorization.substring(7).isBlank())
                 throw new UserNotAllowedException();
-            }
 
             UUID tokenUserId = jwtService.extractUserId(authorization.substring(7).trim());
             String path = request.getRequestURI().substring(request.getContextPath().length());
@@ -69,9 +67,8 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
                 String userId = path.substring(resourcePath.length()).split("/")[0];
                 UUID requestedUserId = UUID.fromString(userId);
 
-                if (!tokenUserId.equals(requestedUserId)) {
+                if (!tokenUserId.equals(requestedUserId))
                     throw new UserNotAllowedException();
-                }
             }
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException exception) {

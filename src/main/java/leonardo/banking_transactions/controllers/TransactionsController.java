@@ -22,7 +22,10 @@ public class TransactionsController {
     @PostMapping
     public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionCreateRequest request) {
         var transaction = service.create(request);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(transaction.getId()).toUri();
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(transaction.getId()).toUri();
         return ResponseEntity.created(location).body(TransactionResponse.from(transaction));
     }
 

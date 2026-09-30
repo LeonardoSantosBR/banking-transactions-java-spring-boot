@@ -49,9 +49,8 @@ public class TransactionEventConsumer {
 
     private String requiredText(JsonNode node, String field) {
         String value = node.path(field).asText(null);
-        if (value == null || value.isBlank()) {
+        if (value == null || value.isBlank())
             throw new IllegalArgumentException("Missing required event field: " + field);
-        }
         return value;
     }
 }

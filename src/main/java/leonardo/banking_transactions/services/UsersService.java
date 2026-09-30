@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @Service
 public class UsersService {
-    
+
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -33,7 +33,10 @@ public class UsersService {
     @Transactional
     public UsersEntity create(UserCreateRequest request) {
         UsersEntity user = new UsersEntity();
-        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email()); user.setPhone(request.phone());
+        user.setName(request.name());
+        user.setCpf(request.cpf());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
         user.setPassword(passwordEncoder.encode(request.password()));
         validateUniqueFields(user, null);
         return usersRepository.save(user);
@@ -46,7 +49,8 @@ public class UsersService {
 
     @Transactional(readOnly = true)
     public UsersEntity findById(UUID id) {
-        return usersRepository.findByIdAndDeletedAtIsNull(id)
+        return usersRepository
+                .findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 
@@ -58,28 +62,29 @@ public class UsersService {
         currentUser.setCpf(user.getCpf());
         currentUser.setEmail(user.getEmail());
         currentUser.setPhone(user.getPhone());
-        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+        if (user.getPassword() != null && !user.getPassword().isBlank())
             currentUser.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
-
         return usersRepository.save(currentUser);
     }
 
     @Transactional
     public UsersEntity update(UUID id, UserUpdateRequest request) {
         UsersEntity user = new UsersEntity();
-        user.setName(request.name()); user.setCpf(request.cpf()); user.setEmail(request.email()); user.setPhone(request.phone());
+        user.setName(request.name());
+        user.setCpf(request.cpf());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
         user.setPassword(request.password());
         return update(id, user);
     }
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        UsersEntity user = usersRepository.findByCpfAndDeletedAtIsNull(request.cpf())
+        UsersEntity user = usersRepository
+                .findByCpfAndDeletedAtIsNull(request.cpf())
                 .orElseThrow(InvalidCredentialsException::new);
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), user.getPassword()))
             throw new InvalidCredentialsException();
-        }
         return new LoginResponse(jwtService.generateToken(user));
     }
 
@@ -97,11 +102,9 @@ public class UsersService {
         boolean emailAlreadyExists = currentUserId == null
                 ? usersRepository.existsByEmail(user.getEmail())
                 : usersRepository.existsByEmailAndIdNot(user.getEmail(), currentUserId);
-        if (cpfAlreadyExists) {
+        if (cpfAlreadyExists)
             throw new EmailOrCpfAlreadyRegisteredException("CPF", user.getCpf());
-        }
-        if (emailAlreadyExists) {
+        if (emailAlreadyExists)
             throw new EmailOrCpfAlreadyRegisteredException("EMAIL", user.getEmail());
-        }
     }
 }

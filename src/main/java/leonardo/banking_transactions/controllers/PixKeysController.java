@@ -23,7 +23,10 @@ public class PixKeysController {
     public ResponseEntity<PixKeyResponse> create(@PathVariable UUID accountId,
             @Valid @RequestBody PixKeyCreateRequest request) {
         var key = service.create(accountId, request);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(key.getId()).toUri();
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(key.getId()).toUri();
         return ResponseEntity.created(location).body(PixKeyResponse.from(key));
     }
 
