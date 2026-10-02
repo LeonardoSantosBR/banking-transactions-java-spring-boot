@@ -3,6 +3,7 @@ package leonardo.banking_transactions.controllers;
 import leonardo.banking_transactions.entities.UsersEntity;
 import leonardo.banking_transactions.dtos.UserCreateRequest;
 import leonardo.banking_transactions.dtos.UserResponse;
+import leonardo.banking_transactions.dtos.UserSummaryResponse;
 import leonardo.banking_transactions.dtos.UserUpdateRequest;
 import jakarta.validation.Valid;
 import leonardo.banking_transactions.services.UsersService;
@@ -41,8 +42,8 @@ public class UsersController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> findAll() {
-        return ResponseEntity.ok(usersService.findAllActive().stream().map(UserResponse::from).toList());
+    public ResponseEntity<List<UserSummaryResponse>> findAll() {
+        return ResponseEntity.ok(usersService.findAllActive().stream().map(UserSummaryResponse::from).toList());
     }
 
     @GetMapping("/{id}")

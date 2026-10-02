@@ -8,14 +8,6 @@ import java.util.UUID;
 
 public record TransactionResponse(
         UUID id,
-        String endToEndId,
-        String idempotencyKey,
-        UUID payerAccountId,
-        UUID payeeAccountId,
-        String pixKeyUsed,
-        String qrCodeType,
-        String qrCodePayload,
-        String txid,
         BigDecimal amount,
         String currency,
         String channel,
@@ -25,9 +17,8 @@ public record TransactionResponse(
         OffsetDateTime updatedAt) {
 
     public static TransactionResponse from(TransactionsEntity t) {
-        return new TransactionResponse(t.getId(), t.getEndToEndId(), t.getIdempotencyKey(),
-                t.getPayerAccount().getId(), t.getPayeeAccount().getId(), t.getPixKeyUsed(),
-                t.getQrCodeType(), t.getQrCodePayload(), t.getTxid(), t.getAmount(), t.getCurrency(),
+        return new TransactionResponse(t.getId(),
+                t.getAmount(), t.getCurrency(),
                 t.getChannel(), t.getStatus(), t.getDescription(), t.getCreatedAt(), t.getUpdatedAt());
     }
 }

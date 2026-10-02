@@ -3,7 +3,7 @@ package leonardo.banking_transactions.services;
 import leonardo.banking_transactions.dtos.AccountCreateRequest;
 import leonardo.banking_transactions.entities.AccountsEntity;
 import leonardo.banking_transactions.exceptions.AccountNotFoundException;
-import leonardo.banking_transactions.exceptions.AccountAlreadyRegisteredException;
+import leonardo.banking_transactions.exceptions.AccountDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.UserNotFoundException;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.UsersRepository;
@@ -24,34 +24,34 @@ public class AccountsService {
     }
 
     @Transactional
-    public AccountsEntity create(UUID userId, AccountCreateRequest request) {
+    public AccountsEntity create(UUID authenticatedUserId, AccountCreateRequest request) {
         if (accountsRepository.existsByBranchAndAccountNumber(request.branch(), request.accountNumber()))
-            throw new AccountAlreadyRegisteredException(request.branch(), request.accountNumber());
+            throw new AccountDataConflictExistingRecord();
 
         AccountsEntity account = new AccountsEntity();
-        account.setUser(usersRepository.findByIdAndDeletedAtIsNull(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId)));
+        account.setUser(usersRepository.findByIdAndDeletedAtIsNull(authenticatedUserId)
+                .orElseThrow(() -> new UserNotFoundException(authenticatedUserId)));
         account.setBranch(request.branch());
         account.setAccountNumber(request.accountNumber());
         return accountsRepository.save(account);
     }
 
     @Transactional(readOnly = true)
-    public List<AccountsEntity> findByUser(UUID userId) {
-        usersRepository.findByIdAndDeletedAtIsNull(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-        return accountsRepository.findByUserId(userId);
+    public List<AccountsEntity> findByUser(UUID authenticatedUserId) {
+        usersRepository.findByIdAndDeletedAtIsNull(authenticatedUserId)
+                .orElseThrow(() -> new UserNotFoundException(authenticatedUserId));
+        return accountsRepository.findByUserId(authenticatedUserId);
     }
 
     @Transactional(readOnly = true)
-    public AccountsEntity findById(UUID userId, UUID accountId) {
-        return accountsRepository.findByIdAndUserId(accountId, userId)
+    public AccountsEntity findById(UUID authenticatedUserId, UUID accountId) {
+        return accountsRepository.findByIdAndUserId(accountId, authenticatedUserId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
     @Transactional
-    public void delete(UUID userId, UUID accountId) {
-        AccountsEntity account = findById(userId, accountId);
+    public void delete(UUID authenticatedUserId, UUID accountId) {
+        AccountsEntity account = findById(authenticatedUserId, accountId);
         accountsRepository.delete(account);
     }
 }

@@ -1,7 +1,7 @@
 package leonardo.banking_transactions.services;
 
 import leonardo.banking_transactions.entities.UsersEntity;
-import leonardo.banking_transactions.exceptions.EmailOrCpfAlreadyRegisteredException;
+import leonardo.banking_transactions.exceptions.UserDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.UserNotFoundException;
 import leonardo.banking_transactions.exceptions.InvalidCredentialsException;
 import leonardo.banking_transactions.dtos.LoginRequest;
@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @Service
 public class UsersService {
-
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -103,8 +102,8 @@ public class UsersService {
                 ? usersRepository.existsByEmail(user.getEmail())
                 : usersRepository.existsByEmailAndIdNot(user.getEmail(), currentUserId);
         if (cpfAlreadyExists)
-            throw new EmailOrCpfAlreadyRegisteredException("CPF", user.getCpf());
+            throw new UserDataConflictExistingRecord();
         if (emailAlreadyExists)
-            throw new EmailOrCpfAlreadyRegisteredException("EMAIL", user.getEmail());
+            throw new UserDataConflictExistingRecord();
     }
 }

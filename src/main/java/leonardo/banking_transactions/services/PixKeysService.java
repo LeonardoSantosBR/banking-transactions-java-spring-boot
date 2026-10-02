@@ -4,7 +4,7 @@ import leonardo.banking_transactions.dtos.PixKeyCreateRequest;
 import leonardo.banking_transactions.dtos.PixKeyUpdateRequest;
 import leonardo.banking_transactions.entities.PixKeysEntity;
 import leonardo.banking_transactions.exceptions.AccountNotFoundException;
-import leonardo.banking_transactions.exceptions.PixKeyAlreadyRegisteredException;
+import leonardo.banking_transactions.exceptions.PixKeyDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.PixKeyNotFoundException;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.PixKeysRepository;
@@ -15,7 +15,6 @@ import java.util.UUID;
 
 @Service
 public class PixKeysService {
-
     private final PixKeysRepository pixKeysRepository;
     private final AccountsRepository accountsRepository;
 
@@ -25,12 +24,12 @@ public class PixKeysService {
     }
 
     @Transactional
-    public PixKeysEntity create(UUID accountId, PixKeyCreateRequest request) {
+    public PixKeysEntity create(UUID authenticatedUserId, UUID accountId, PixKeyCreateRequest request) {
         var account = accountsRepository
-                .findById(accountId)
+                .findByIdAndUserId(accountId, authenticatedUserId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
         if (pixKeysRepository.existsByKeyValue(request.keyValue()))
-            throw new PixKeyAlreadyRegisteredException(request.keyValue());
+            throw new PixKeyDataConflictExistingRecord();
         var key = new PixKeysEntity();
         key.setAccount(account);
         key.setKeyType(request.keyType());
@@ -39,21 +38,22 @@ public class PixKeysService {
     }
 
     @Transactional(readOnly = true)
-    public List<PixKeysEntity> findByAccount(UUID accountId) {
-        ensureAccount(accountId);
-        return pixKeysRepository.findByAccountId(accountId);
+    public List<PixKeysEntity> findByAccount(UUID authenticatedUserId, UUID accountId) {
+        ensureAccountOwnedByUser(authenticatedUserId, accountId);
+        return pixKeysRepository.findByAccountIdAndAccountUserId(accountId, authenticatedUserId);
     }
 
     @Transactional(readOnly = true)
-    public PixKeysEntity findById(UUID accountId, UUID id) {
-        return pixKeysRepository.findByIdAndAccountId(id, accountId).orElseThrow(() -> new PixKeyNotFoundException(id));
+    public PixKeysEntity findById(UUID authenticatedUserId, UUID accountId, UUID id) {
+        return pixKeysRepository.findByIdAndAccountIdAndAccountUserId(id, accountId, authenticatedUserId)
+                .orElseThrow(() -> new PixKeyNotFoundException(id));
     }
 
     @Transactional
-    public PixKeysEntity update(UUID accountId, UUID id, PixKeyUpdateRequest request) {
-        var key = findById(accountId, id);
+    public PixKeysEntity update(UUID authenticatedUserId, UUID accountId, UUID id, PixKeyUpdateRequest request) {
+        var key = findById(authenticatedUserId, accountId, id);
         if (!key.getKeyValue().equals(request.keyValue()) && pixKeysRepository.existsByKeyValue(request.keyValue()))
-            throw new PixKeyAlreadyRegisteredException(request.keyValue());
+            throw new PixKeyDataConflictExistingRecord();
         key.setKeyType(request.keyType());
         key.setKeyValue(request.keyValue());
         key.setActive(request.active());
@@ -61,12 +61,12 @@ public class PixKeysService {
     }
 
     @Transactional
-    public void delete(UUID accountId, UUID id) {
-        pixKeysRepository.delete(findById(accountId, id));
+    public void delete(UUID authenticatedUserId, UUID accountId, UUID id) {
+        pixKeysRepository.delete(findById(authenticatedUserId, accountId, id));
     }
 
-    private void ensureAccount(UUID id) {
-        if (!accountsRepository.existsById(id))
-            throw new AccountNotFoundException(id);
+    private void ensureAccountOwnedByUser(UUID userId, UUID accountId) {
+        if (!accountsRepository.existsByIdAndUserId(accountId, userId))
+            throw new AccountNotFoundException(accountId);
     }
 }

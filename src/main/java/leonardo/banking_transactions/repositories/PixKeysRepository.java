@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface PixKeysRepository extends JpaRepository<PixKeysEntity, UUID> {
     boolean existsByKeyValue(String keyValue);
 
-    List<PixKeysEntity> findByAccountId(UUID accountId);
+    List<PixKeysEntity> findByAccountIdAndAccountUserId(UUID accountId, UUID userId);
 
-    Optional<PixKeysEntity> findByIdAndAccountId(UUID id, UUID accountId);
+    Optional<PixKeysEntity> findByIdAndAccountIdAndAccountUserId(UUID id, UUID accountId, UUID userId);
 }

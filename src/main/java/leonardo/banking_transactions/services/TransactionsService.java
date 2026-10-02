@@ -3,7 +3,6 @@ package leonardo.banking_transactions.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import leonardo.banking_transactions.dtos.TransactionCreateRequest;
-import leonardo.banking_transactions.dtos.TransactionUpdateRequest;
 import leonardo.banking_transactions.entities.TransactionsEntity;
 import leonardo.banking_transactions.enums.TransactionStatusEnum;
 import leonardo.banking_transactions.exceptions.*;
@@ -34,7 +33,7 @@ public class TransactionsService {
     @Transactional
     public TransactionsEntity create(TransactionCreateRequest request) {
         if (transactionsRepository.existsByIdempotencyKey(request.idempotencyKey()))
-            throw new TransactionAlreadyRegisteredException(request.idempotencyKey());
+            throw new TransactionDataConflictExistingRecord();
         if (request.payerAccountId().equals(request.payeeAccountId()))
             throw new InvalidTransactionException("Payer and payee accounts must be different");
         var payer = accountsRepository.findById(request.payerAccountId())
@@ -68,32 +67,19 @@ public class TransactionsService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionsEntity> findAll() {
-        return transactionsRepository.findAll();
+    public List<TransactionsEntity> findAll(UUID userId) {
+        return transactionsRepository.findAllByPayerAccount_User_Id(userId);
     }
 
     @Transactional(readOnly = true)
-    public TransactionsEntity findById(UUID id) {
-        return transactionsRepository.findById(id).orElseThrow(() -> new TransactionNotFoundException(id));
-    }
-
-    @Transactional
-    public TransactionsEntity update(UUID id, TransactionUpdateRequest request) {
-        var t = findById(id);
-        t.setStatus(request.status());
-        t.setDescription(request.description());
-        return transactionsRepository.save(t);
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        transactionsRepository.delete(findById(id));
+    public TransactionsEntity findById(UUID id, UUID userId) {
+        return transactionsRepository.findByIdAndPayerAccount_User_Id(id, userId)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
     }
 
     @Transactional
     public void processSettlement(UUID id, boolean rejected) {
-        var transaction = transactionsRepository
-                .findById(id)
+        var transaction = transactionsRepository.findById(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
         if (transaction.getStatus() != TransactionStatusEnum.PROCESSING)
             return;

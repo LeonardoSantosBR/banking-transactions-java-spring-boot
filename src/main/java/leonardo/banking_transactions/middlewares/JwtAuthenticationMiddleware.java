@@ -5,14 +5,15 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import leonardo.banking_transactions.config.JwtAccessDeniedHandler;
 import leonardo.banking_transactions.config.JwtAuthenticationEntryPoint;
 import leonardo.banking_transactions.exceptions.JwtInvalidOrMissingException;
 import leonardo.banking_transactions.exceptions.UserNotAllowedException;
 import leonardo.banking_transactions.services.JwtService;
-
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.authentication.BadCredentialsException;
 
 import java.io.IOException;
 import java.util.Set;
@@ -20,30 +21,30 @@ import java.util.UUID;
 
 @Component
 public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
+    public static final String AUTHENTICATED_USER_ID_ATTRIBUTE = "authenticatedUserId";
 
     private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
             "POST /api/users",
-            "GET  /api/users",
             "POST /api/auth/login");
     private static final String USERS_PATH = "/api/users/";
     private static final String ACCOUNTS_PATH = "/api/accounts/";
     private final JwtService jwtService;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtAccessDeniedHandler accessDeniedHandler;
 
     public JwtAuthenticationMiddleware(
             JwtService jwtService,
-            JwtAuthenticationEntryPoint authenticationEntryPoint) {
-
+            JwtAuthenticationEntryPoint authenticationEntryPoint,
+            JwtAccessDeniedHandler accessDeniedHandler) {
         this.jwtService = jwtService;
         this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI()
-                .substring(request.getContextPath().length());
+        String path = request.getRequestURI().substring(request.getContextPath().length());
         String endpoint = request.getMethod() + " " + path;
-
         return PUBLIC_ENDPOINTS.contains(endpoint);
     }
 
@@ -52,49 +53,54 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        try {
-            String authorization = request.getHeader("Authorization");
-
-            if (authorization == null || !authorization.startsWith("Bearer ") || authorization.substring(7).isBlank())
-                throw new UserNotAllowedException();
-
-            UUID tokenUserId = jwtService.extractUserId(authorization.substring(7).trim());
-            String path = request.getRequestURI().substring(request.getContextPath().length());
-            String resourcePath = path.startsWith(USERS_PATH) ? USERS_PATH
-                    : path.startsWith(ACCOUNTS_PATH) ? ACCOUNTS_PATH : null;
-
-            if (resourcePath != null) {
-                String userId = path.substring(resourcePath.length()).split("/")[0];
-                UUID requestedUserId = UUID.fromString(userId);
-
-                if (!tokenUserId.equals(requestedUserId))
-                    throw new UserNotAllowedException();
-            }
-            filterChain.doFilter(request, response);
-        } catch (JwtException | IllegalArgumentException exception) {
-            handleAuthenticationFailure(
-                    request,
-                    response,
-                    new JwtInvalidOrMissingException().getMessage(),
-                    exception);
-        } catch (UserNotAllowedException exception) {
-            handleAuthenticationFailure(
-                    request,
-                    response,
-                    exception.getMessage(),
-                    exception);
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null || !authorization.startsWith("Bearer ") ||
+                authorization.substring(7).isBlank()) {
+            rejectAuthentication(request, response, null);
+            return;
         }
+
+        UUID tokenUserId;
+        try {
+            tokenUserId = jwtService.extractUserId(authorization.substring(7).trim());
+        } catch (JwtException | IllegalArgumentException exception) {
+            rejectAuthentication(request, response, exception);
+            return;
+        }
+
+        request.setAttribute(AUTHENTICATED_USER_ID_ATTRIBUTE, tokenUserId);
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        String resourcePath = path.startsWith(USERS_PATH) ? USERS_PATH
+                : path.startsWith(ACCOUNTS_PATH) ? ACCOUNTS_PATH : null;
+
+        if (resourcePath != null) {
+            String userId = path.substring(resourcePath.length()).split("/")[0];
+            UUID requestedUserId;
+            try {
+                requestedUserId = UUID.fromString(userId);
+            } catch (IllegalArgumentException exception) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid user ID");
+                return;
+            }
+
+            if (!tokenUserId.equals(requestedUserId)) {
+                rejectAuthorization(request, response);
+                return;
+            }
+        }
+        filterChain.doFilter(request, response);
     }
 
-    private void handleAuthenticationFailure(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            String message,
-            Exception cause) throws IOException {
-
-        authenticationEntryPoint.commence(
-                request,
-                response,
+    private void rejectAuthentication(HttpServletRequest request, HttpServletResponse response, Exception cause)
+            throws IOException {
+        String message = new JwtInvalidOrMissingException().getMessage();
+        authenticationEntryPoint.commence(request, response,
                 new BadCredentialsException(message, cause));
+    }
+
+    private void rejectAuthorization(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        String message = new UserNotAllowedException().getMessage();
+        accessDeniedHandler.handle(request, response, new AccessDeniedException(message));
     }
 }

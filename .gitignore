@@ -34,3 +34,4 @@ build/
 
 docker-compose.yml
 application.properties
+security-review.md
