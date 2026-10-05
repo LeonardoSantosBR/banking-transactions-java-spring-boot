@@ -9,10 +9,7 @@ import java.util.UUID;
 
 public interface AccountsRepository extends JpaRepository<AccountsEntity, UUID> {
     boolean existsByBranchAndAccountNumber(String branch, String accountNumber);
-
     List<AccountsEntity> findByUserId(UUID userId);
-
     Optional<AccountsEntity> findByIdAndUserId(UUID id, UUID userId);
-
     boolean existsByIdAndUserId(UUID id, UUID userId);
 }

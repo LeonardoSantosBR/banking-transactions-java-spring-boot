@@ -8,19 +8,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UsersRepository extends JpaRepository<UsersEntity, UUID> {
-    
     List<UsersEntity> findByDeletedAtIsNull();
-
     Optional<UsersEntity> findByIdAndDeletedAtIsNull(UUID id);
-
-
     Optional<UsersEntity> findByCpfAndDeletedAtIsNull(String cpf);
-
     boolean existsByCpf(String cpf);
-
     boolean existsByEmail(String email);
-
     boolean existsByCpfAndIdNot(String cpf, UUID id);
-
     boolean existsByEmailAndIdNot(String email, UUID id);
 }

@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class AccountDataConflictExistingRecord extends ApiException {
     public AccountDataConflictExistingRecord() {
-        super(HttpStatus.CONFLICT,
-                "Account conflicts with an existing record");
+        super(HttpStatus.CONFLICT, "Account conflicts with an existing record");
     }
 }

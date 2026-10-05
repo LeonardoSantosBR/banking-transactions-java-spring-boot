@@ -62,10 +62,8 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
             rejectAuthentication(request, response, null);
             return;
         }
-
         UUID tokenUserId;
         int tokenVersion;
-        
         try {
             String token = authorization.substring(7).trim();
             tokenUserId = jwtService.extractUserId(token);
@@ -74,17 +72,14 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
             rejectAuthentication(request, response, exception);
             return;
         }
-
         if (usersRepository.findByIdAndDeletedAtIsNull(tokenUserId).isEmpty()
                 || !tokenVersionsRepository.existsByUserIdAndTokenVersion(tokenUserId, tokenVersion)) {
             rejectAuthentication(request, response, null);
             return;
         }
-
         request.setAttribute(AUTHENTICATED_USER_ID_ATTRIBUTE, tokenUserId);
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        String resourcePath = path.startsWith(USERS_PATH) ? USERS_PATH
-                : path.startsWith(ACCOUNTS_PATH) ? ACCOUNTS_PATH : null;
+        String resourcePath = path.startsWith(USERS_PATH) ? USERS_PATH : path.startsWith(ACCOUNTS_PATH) ? ACCOUNTS_PATH : null;
 
         if (resourcePath != null) {
             String userId = path.substring(resourcePath.length()).split("/")[0];
@@ -100,7 +95,6 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
                 return;
             }
         }
-
         filterChain.doFilter(request, response);
     }
 

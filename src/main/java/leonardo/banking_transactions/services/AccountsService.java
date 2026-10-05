@@ -27,7 +27,6 @@ public class AccountsService {
     public AccountsEntity create(UUID authenticatedUserId, AccountCreateRequest request) {
         if (accountsRepository.existsByBranchAndAccountNumber(request.branch(), request.accountNumber()))
             throw new AccountDataConflictExistingRecord();
-
         AccountsEntity account = new AccountsEntity();
         account.setUser(usersRepository.findByIdAndDeletedAtIsNull(authenticatedUserId)
                 .orElseThrow(() -> new UserNotFoundException(authenticatedUserId)));
