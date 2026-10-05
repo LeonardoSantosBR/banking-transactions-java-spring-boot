@@ -1,14 +1,17 @@
 package leonardo.banking_transactions.services;
 
 import leonardo.banking_transactions.entities.UsersEntity;
+import leonardo.banking_transactions.entities.UserTokenVersionsEntity;
 import leonardo.banking_transactions.exceptions.UserDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.UserNotFoundException;
 import leonardo.banking_transactions.exceptions.InvalidCredentialsException;
+import leonardo.banking_transactions.exceptions.UserNotAllowedException;
 import leonardo.banking_transactions.dtos.LoginRequest;
 import leonardo.banking_transactions.dtos.LoginResponse;
 import leonardo.banking_transactions.dtos.UserCreateRequest;
 import leonardo.banking_transactions.dtos.UserUpdateRequest;
 import leonardo.banking_transactions.repositories.UsersRepository;
+import leonardo.banking_transactions.repositories.UserTokenVersionsRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,11 +23,17 @@ import java.util.UUID;
 @Service
 public class UsersService {
     private final UsersRepository usersRepository;
+    private final UserTokenVersionsRepository tokenVersionsRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public UsersService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public UsersService(
+            UsersRepository usersRepository,
+            UserTokenVersionsRepository tokenVersionsRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService) {
         this.usersRepository = usersRepository;
+        this.tokenVersionsRepository = tokenVersionsRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
@@ -38,7 +47,9 @@ public class UsersService {
         user.setPhone(request.phone());
         user.setPassword(passwordEncoder.encode(request.password()));
         validateUniqueFields(user, null);
-        return usersRepository.save(user);
+        UsersEntity savedUser = usersRepository.save(user);
+        tokenVersionsRepository.save(new UserTokenVersionsEntity(savedUser.getId(), 0));
+        return savedUser;
     }
 
     @Transactional(readOnly = true)
@@ -61,8 +72,10 @@ public class UsersService {
         currentUser.setCpf(user.getCpf());
         currentUser.setEmail(user.getEmail());
         currentUser.setPhone(user.getPhone());
-        if (user.getPassword() != null && !user.getPassword().isBlank())
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
             currentUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            incrementTokenVersion(id);
+        }
         return usersRepository.save(currentUser);
     }
 
@@ -84,14 +97,27 @@ public class UsersService {
                 .orElseThrow(InvalidCredentialsException::new);
         if (!passwordEncoder.matches(request.password(), user.getPassword()))
             throw new InvalidCredentialsException();
-        return new LoginResponse(jwtService.generateToken(user));
+        int tokenVersion = tokenVersionsRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("Token version is missing for user"))
+                .getTokenVersion();
+        return new LoginResponse(jwtService.generateToken(user, tokenVersion));
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID authenticatedUserId, UUID id) {
+        if (!id.equals(authenticatedUserId))
+            throw new UserNotAllowedException();
         UsersEntity user = findById(id);
         user.setDeletedAt(OffsetDateTime.now());
+        incrementTokenVersion(id);
         usersRepository.save(user);
+    }
+
+    private void incrementTokenVersion(UUID userId) {
+        var tokenVersion = tokenVersionsRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Token version is missing for user"));
+        tokenVersion.setTokenVersion(tokenVersion.getTokenVersion() + 1);
+        tokenVersionsRepository.save(tokenVersion);
     }
 
     private void validateUniqueFields(UsersEntity user, UUID currentUserId) {

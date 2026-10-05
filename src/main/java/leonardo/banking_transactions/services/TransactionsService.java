@@ -21,8 +21,12 @@ public class TransactionsService {
     private final ObjectMapper objectMapper;
     private final BalanceService balanceService;
 
-    public TransactionsService(TransactionsRepository transactionsRepository, AccountsRepository accountsRepository,
-            OutboxEventsService outboxEventsService, ObjectMapper objectMapper, BalanceService balanceService) {
+    public TransactionsService(
+            TransactionsRepository transactionsRepository,
+            AccountsRepository accountsRepository,
+            OutboxEventsService outboxEventsService,
+            ObjectMapper objectMapper,
+            BalanceService balanceService) {
         this.transactionsRepository = transactionsRepository;
         this.accountsRepository = accountsRepository;
         this.outboxEventsService = outboxEventsService;
@@ -85,7 +89,8 @@ public class TransactionsService {
             return;
         if (rejected) {
             transaction.setStatus(TransactionStatusEnum.REJECTED);
-        } else if (balanceService.transfer(transaction.getPayerAccount(), transaction.getPayeeAccount(), transaction.getAmount())) {
+        } else if (balanceService.transfer(transaction.getPayerAccount(), transaction.getPayeeAccount(),
+                transaction.getAmount())) {
             transaction.setStatus(TransactionStatusEnum.SETTLED);
         } else {
             transaction.setStatus(TransactionStatusEnum.REJECTED);

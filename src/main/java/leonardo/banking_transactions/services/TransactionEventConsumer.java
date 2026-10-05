@@ -19,7 +19,9 @@ public class TransactionEventConsumer {
     private final TransactionsService transactionsService;
     private final ObjectMapper objectMapper;
 
-    public TransactionEventConsumer(SqsService sqsService, TransactionsService transactionsService,
+    public TransactionEventConsumer(
+            SqsService sqsService,
+            TransactionsService transactionsService,
             ObjectMapper objectMapper) {
         this.sqsService = sqsService;
         this.transactionsService = transactionsService;

@@ -20,7 +20,9 @@ public class SqsService {
     private final ObjectMapper objectMapper;
     private final String transactionQueueUrl;
 
-    public SqsService(SqsClient sqsClient, ObjectMapper objectMapper,
+    public SqsService(
+            SqsClient sqsClient,
+            ObjectMapper objectMapper,
             @Value("${aws.sqs.transaction-queue-url}") String transactionQueueUrl) {
         this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
@@ -36,7 +38,7 @@ public class SqsService {
             message.put("idempotencyKey", event.getTransaction().getIdempotencyKey());
             message.putPOJO("createdAt", event.getCreatedAt());
             message.set("payload", event.getPayload());
-            
+
             sqsClient.sendMessage(SendMessageRequest.builder()
                     .queueUrl(transactionQueueUrl)
                     .messageBody(objectMapper.writeValueAsString(message))

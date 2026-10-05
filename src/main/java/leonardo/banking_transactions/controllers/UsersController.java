@@ -6,6 +6,8 @@ import leonardo.banking_transactions.dtos.UserResponse;
 import leonardo.banking_transactions.dtos.UserSummaryResponse;
 import leonardo.banking_transactions.dtos.UserUpdateRequest;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import leonardo.banking_transactions.middlewares.JwtAuthenticationMiddleware;
 import leonardo.banking_transactions.services.UsersService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -59,8 +61,10 @@ public class UsersController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        usersService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable UUID id, HttpServletRequest request) {
+        UUID authenticatedUserId = (UUID) request.getAttribute(
+                JwtAuthenticationMiddleware.AUTHENTICATED_USER_ID_ATTRIBUTE);
+        usersService.delete(authenticatedUserId, id);
         return ResponseEntity.noContent().build();
     }
 }
