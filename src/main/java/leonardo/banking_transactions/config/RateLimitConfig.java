@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 
 @Configuration
-public class LoginRateLimitConfig {
+public class RateLimitConfig {
     @Bean(destroyMethod = "shutdown")
     RedisClient rateLimitRedisClient(
             @Value("${spring.data.redis.host:localhost}") String host,
