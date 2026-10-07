@@ -10,8 +10,8 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import leonardo.banking_transactions.exceptions.LoginRateLimitExceededException;
-import leonardo.banking_transactions.services.LoginRateLimitService;
+import leonardo.banking_transactions.exceptions.RateLimitExceededException;
+import leonardo.banking_transactions.services.RateLimitService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -23,13 +23,13 @@ import java.time.Instant;
 import java.util.Map;
 
 @Component
-public class LoginRateLimitFilter extends OncePerRequestFilter {
+public class RateLimitFilter extends OncePerRequestFilter {
     private static final String LOGIN_PATH = "/api/auth/login";
     private static final String USER_CREATE_PATH = "/api/users";
-    private final LoginRateLimitService rateLimitService;
+    private final RateLimitService rateLimitService;
     private final ObjectMapper objectMapper;
 
-    public LoginRateLimitFilter(LoginRateLimitService rateLimitService, ObjectMapper objectMapper) {
+    public RateLimitFilter(RateLimitService rateLimitService, ObjectMapper objectMapper) {
         this.rateLimitService = rateLimitService;
         this.objectMapper = objectMapper;
     }
@@ -67,7 +67,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
                 rateLimitService.checkAndConsumeLogin(request.getRemoteAddr(), cpf);
             else
                 rateLimitService.checkAndConsumeUserCreation(request.getRemoteAddr(), cpf);
-        } catch (LoginRateLimitExceededException exception) {
+        } catch (RateLimitExceededException exception) {
             writeError(response, 429, "Too many requests. Try again later.");
             return;
         } catch (RuntimeException exception) {
@@ -91,12 +91,10 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
 
     private static final class CachedBodyRequest extends HttpServletRequestWrapper {
         private final byte[] body;
-
         private CachedBodyRequest(HttpServletRequest request, byte[] body) {
             super(request);
             this.body = body;
         }
-
         @Override
         public ServletInputStream getInputStream() {
             ByteArrayInputStream input = new ByteArrayInputStream(body);
