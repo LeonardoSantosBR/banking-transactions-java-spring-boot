@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.login;
 
 import jakarta.validation.constraints.NotBlank;
 

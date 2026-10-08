@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.transactions;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

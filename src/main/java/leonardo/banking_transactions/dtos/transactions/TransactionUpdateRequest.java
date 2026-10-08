@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.transactions;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -1,12 +1,11 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.pixKeys;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import leonardo.banking_transactions.enums.PixKeyTypeEnum;
 
-public record PixKeyUpdateRequest(
+public record PixKeyCreateRequest(
         @NotNull PixKeyTypeEnum keyType,
-        @NotBlank @Size(max = 150) String keyValue,
-        boolean active) {
+        @NotBlank @Size(max = 150) String keyValue) {
 }

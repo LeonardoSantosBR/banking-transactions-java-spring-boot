@@ -1,7 +1,7 @@
 package leonardo.banking_transactions.services;
 
-import leonardo.banking_transactions.dtos.PixKeyCreateRequest;
-import leonardo.banking_transactions.dtos.PixKeyUpdateRequest;
+import leonardo.banking_transactions.dtos.pixKeys.PixKeyCreateRequest;
+import leonardo.banking_transactions.dtos.pixKeys.PixKeyUpdateRequest;
 import leonardo.banking_transactions.entities.PixKeysEntity;
 import leonardo.banking_transactions.exceptions.AccountNotFoundException;
 import leonardo.banking_transactions.exceptions.PixKeyDataConflictExistingRecord;

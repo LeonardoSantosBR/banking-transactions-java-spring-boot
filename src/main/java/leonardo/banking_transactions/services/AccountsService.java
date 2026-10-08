@@ -1,6 +1,6 @@
 package leonardo.banking_transactions.services;
 
-import leonardo.banking_transactions.dtos.AccountCreateRequest;
+import leonardo.banking_transactions.dtos.accounts.AccountCreateRequest;
 import leonardo.banking_transactions.entities.AccountsEntity;
 import leonardo.banking_transactions.exceptions.AccountNotFoundException;
 import leonardo.banking_transactions.exceptions.AccountDataConflictExistingRecord;

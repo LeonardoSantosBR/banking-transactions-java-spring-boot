@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.pixKeys;
 
 import leonardo.banking_transactions.entities.PixKeysEntity;
 import leonardo.banking_transactions.enums.PixKeyTypeEnum;

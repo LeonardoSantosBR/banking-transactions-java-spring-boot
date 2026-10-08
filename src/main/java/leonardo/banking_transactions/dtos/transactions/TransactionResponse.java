@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.transactions;
 
 import leonardo.banking_transactions.entities.TransactionsEntity;
 import leonardo.banking_transactions.enums.TransactionStatusEnum;

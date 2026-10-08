@@ -1,9 +1,9 @@
 package leonardo.banking_transactions.controllers;
 
 import jakarta.validation.Valid;
-import leonardo.banking_transactions.dtos.PixKeyCreateRequest;
-import leonardo.banking_transactions.dtos.PixKeyResponse;
-import leonardo.banking_transactions.dtos.PixKeyUpdateRequest;
+import leonardo.banking_transactions.dtos.pixKeys.PixKeyCreateRequest;
+import leonardo.banking_transactions.dtos.pixKeys.PixKeyResponse;
+import leonardo.banking_transactions.dtos.pixKeys.PixKeyUpdateRequest;
 import leonardo.banking_transactions.middlewares.JwtAuthenticationMiddleware;
 import leonardo.banking_transactions.services.PixKeysService;
 import org.springframework.http.ResponseEntity;

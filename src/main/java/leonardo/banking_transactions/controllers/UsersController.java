@@ -1,10 +1,10 @@
 package leonardo.banking_transactions.controllers;
 
 import leonardo.banking_transactions.entities.UsersEntity;
-import leonardo.banking_transactions.dtos.UserCreateRequest;
-import leonardo.banking_transactions.dtos.UserResponse;
-import leonardo.banking_transactions.dtos.UserSummaryResponse;
-import leonardo.banking_transactions.dtos.UserUpdateRequest;
+import leonardo.banking_transactions.dtos.users.UserCreateRequest;
+import leonardo.banking_transactions.dtos.users.UserResponse;
+import leonardo.banking_transactions.dtos.users.UserSummaryResponse;
+import leonardo.banking_transactions.dtos.users.UserUpdateRequest;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import leonardo.banking_transactions.middlewares.JwtAuthenticationMiddleware;

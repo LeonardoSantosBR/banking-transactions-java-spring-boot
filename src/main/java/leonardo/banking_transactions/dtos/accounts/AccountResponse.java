@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.accounts;
 
 import leonardo.banking_transactions.entities.AccountsEntity;
 

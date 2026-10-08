@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.dtos;
+package leonardo.banking_transactions.dtos.users;
 
 import leonardo.banking_transactions.entities.UsersEntity;
 

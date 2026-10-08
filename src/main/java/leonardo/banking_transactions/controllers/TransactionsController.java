@@ -1,7 +1,8 @@
 package leonardo.banking_transactions.controllers;
 
 import jakarta.validation.Valid;
-import leonardo.banking_transactions.dtos.*;
+import leonardo.banking_transactions.dtos.transactions.TransactionCreateRequest;
+import leonardo.banking_transactions.dtos.transactions.TransactionResponse;
 import leonardo.banking_transactions.services.TransactionsService;
 import leonardo.banking_transactions.middlewares.JwtAuthenticationMiddleware;
 import org.springframework.http.ResponseEntity;

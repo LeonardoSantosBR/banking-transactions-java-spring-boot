@@ -2,7 +2,8 @@ package leonardo.banking_transactions.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import leonardo.banking_transactions.dtos.TransactionCreateRequest;
+
+import leonardo.banking_transactions.dtos.transactions.TransactionCreateRequest;
 import leonardo.banking_transactions.entities.TransactionsEntity;
 import leonardo.banking_transactions.enums.TransactionStatusEnum;
 import leonardo.banking_transactions.exceptions.*;
