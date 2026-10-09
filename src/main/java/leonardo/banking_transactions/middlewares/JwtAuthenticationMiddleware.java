@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import leonardo.banking_transactions.config.JwtAccessDeniedHandler;
 import leonardo.banking_transactions.config.JwtAuthenticationEntryPoint;
 import leonardo.banking_transactions.exceptions.users.UserNotAllowedException;
-import leonardo.banking_transactions.exceptions.validation.InvalidJwtOrMissingException;
+import leonardo.banking_transactions.exceptions.validations.InvalidJwtOrMissingException;
 import leonardo.banking_transactions.repositories.UserTokenVersionsRepository;
 import leonardo.banking_transactions.repositories.UsersRepository;
 import leonardo.banking_transactions.services.JwtService;

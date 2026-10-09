@@ -9,7 +9,7 @@ import leonardo.banking_transactions.enums.TransactionStatusEnum;
 import leonardo.banking_transactions.exceptions.accounts.AccountNotFoundException;
 import leonardo.banking_transactions.exceptions.transactions.TransactionDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.transactions.TransactionNotFoundException;
-import leonardo.banking_transactions.exceptions.validation.InvalidTransactionException;
+import leonardo.banking_transactions.exceptions.validations.InvalidTransactionException;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.TransactionsRepository;
 import org.springframework.stereotype.Service;

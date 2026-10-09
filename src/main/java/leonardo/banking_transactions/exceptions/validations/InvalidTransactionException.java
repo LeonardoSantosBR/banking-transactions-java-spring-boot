@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.exceptions.validation;
+package leonardo.banking_transactions.exceptions.validations;
 
 import leonardo.banking_transactions.config.ApiException;
 import org.springframework.http.HttpStatus;
