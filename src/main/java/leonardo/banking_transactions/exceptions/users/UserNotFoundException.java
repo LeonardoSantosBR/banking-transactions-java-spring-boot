@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.exceptions;
+package leonardo.banking_transactions.exceptions.users;
 
 import java.util.UUID;
 

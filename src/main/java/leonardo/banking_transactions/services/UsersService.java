@@ -2,10 +2,10 @@ package leonardo.banking_transactions.services;
 
 import leonardo.banking_transactions.entities.UsersEntity;
 import leonardo.banking_transactions.entities.UserTokenVersionsEntity;
-import leonardo.banking_transactions.exceptions.UserDataConflictExistingRecord;
-import leonardo.banking_transactions.exceptions.UserNotFoundException;
-import leonardo.banking_transactions.exceptions.InvalidCredentialsException;
-import leonardo.banking_transactions.exceptions.UserNotAllowedException;
+import leonardo.banking_transactions.exceptions.users.UserDataConflictExistingRecord;
+import leonardo.banking_transactions.exceptions.users.UserNotAllowedException;
+import leonardo.banking_transactions.exceptions.users.UserNotFoundException;
+import leonardo.banking_transactions.exceptions.validation.InvalidCredentialsException;
 import leonardo.banking_transactions.dtos.login.LoginRequest;
 import leonardo.banking_transactions.dtos.login.LoginResponse;
 import leonardo.banking_transactions.dtos.users.UserCreateRequest;

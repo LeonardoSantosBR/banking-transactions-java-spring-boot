@@ -1,6 +1,6 @@
-package leonardo.banking_transactions.entities;
+package leonardo.banking_transactions.enums;
 
-public enum SecurityAuditEventType {
+public enum SecurityAuditEventTypeEnum {
     LOGIN_SUCCEEDED,
     LOGIN_FAILED,
     LOGIN_RATE_LIMITED,

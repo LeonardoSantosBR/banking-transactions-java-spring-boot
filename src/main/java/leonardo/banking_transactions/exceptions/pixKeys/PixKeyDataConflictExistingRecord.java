@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.exceptions;
+package leonardo.banking_transactions.exceptions.pixKeys;
 
 import leonardo.banking_transactions.config.ApiException;
 import org.springframework.http.HttpStatus;

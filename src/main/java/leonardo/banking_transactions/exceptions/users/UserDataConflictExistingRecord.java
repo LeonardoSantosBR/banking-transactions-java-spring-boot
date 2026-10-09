@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.exceptions;
+package leonardo.banking_transactions.exceptions.users;
 
 import org.springframework.http.HttpStatus;
 

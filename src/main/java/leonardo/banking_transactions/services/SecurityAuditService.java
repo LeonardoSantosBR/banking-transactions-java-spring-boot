@@ -1,7 +1,7 @@
 package leonardo.banking_transactions.services;
 
 import leonardo.banking_transactions.entities.SecurityAuditEventEntity;
-import leonardo.banking_transactions.entities.SecurityAuditEventType;
+import leonardo.banking_transactions.enums.SecurityAuditEventTypeEnum;
 import leonardo.banking_transactions.repositories.SecurityAuditEventsRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class SecurityAuditService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(
-            SecurityAuditEventType eventType,
+            SecurityAuditEventTypeEnum eventType,
             String cpf,
             String sourceIp,
             String userAgent) {

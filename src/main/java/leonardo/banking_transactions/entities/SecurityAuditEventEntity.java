@@ -8,7 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
+import leonardo.banking_transactions.enums.SecurityAuditEventTypeEnum;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -22,7 +22,7 @@ public class SecurityAuditEventEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false, length = 80)
-    private SecurityAuditEventType eventType;
+    private SecurityAuditEventTypeEnum eventType;
 
     @Column(name = "actor_user_id")
     private UUID actorUserId;
@@ -46,7 +46,7 @@ public class SecurityAuditEventEntity {
     }
 
     public SecurityAuditEventEntity(
-            SecurityAuditEventType eventType,
+            SecurityAuditEventTypeEnum eventType,
             String subjectIdentifierHmac,
             String sourceIp,
             String userAgent) {

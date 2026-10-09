@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import leonardo.banking_transactions.config.JwtAccessDeniedHandler;
 import leonardo.banking_transactions.config.JwtAuthenticationEntryPoint;
-import leonardo.banking_transactions.exceptions.JwtInvalidOrMissingException;
-import leonardo.banking_transactions.exceptions.UserNotAllowedException;
+import leonardo.banking_transactions.exceptions.users.UserNotAllowedException;
+import leonardo.banking_transactions.exceptions.validation.InvalidJwtOrMissingException;
 import leonardo.banking_transactions.repositories.UserTokenVersionsRepository;
 import leonardo.banking_transactions.repositories.UsersRepository;
 import leonardo.banking_transactions.services.JwtService;
@@ -100,7 +100,7 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
 
     private void rejectAuthentication(HttpServletRequest request, HttpServletResponse response, Exception cause)
             throws IOException {
-        String message = new JwtInvalidOrMissingException().getMessage();
+        String message = new InvalidJwtOrMissingException().getMessage();
         authenticationEntryPoint.commence(request, response, new BadCredentialsException(message, cause));
     }
 

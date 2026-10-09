@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import leonardo.banking_transactions.config.RateLimitOperationConfig;
-import leonardo.banking_transactions.entities.SecurityAuditEventType;
+import leonardo.banking_transactions.enums.SecurityAuditEventTypeEnum;
 import leonardo.banking_transactions.exceptions.RateLimitExceededException;
 import leonardo.banking_transactions.services.RateLimitService;
 import leonardo.banking_transactions.services.SecurityAuditService;
@@ -100,7 +100,7 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
             throw exception;
         }
 
-        SecurityAuditEventType responseEventType = eventType(operation, bufferedResponse.getStatus());
+        SecurityAuditEventTypeEnum responseEventType = eventType(operation, bufferedResponse.getStatus());
         try {
             securityAuditService.record(
                     responseEventType,
@@ -109,7 +109,7 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
                     request.getHeader("User-Agent"));
         } catch (RuntimeException exception) {
             logger.error("Could not persist security audit event for a public endpoint");
-            if (responseEventType != SecurityAuditEventType.USER_REGISTRATION_SUCCEEDED) {
+            if (responseEventType != SecurityAuditEventTypeEnum.USER_REGISTRATION_SUCCEEDED) {
                 response.reset();
                 writeError(response, 503, UNAVAILABLE_MESSAGE);
                 return;
@@ -121,7 +121,7 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
     private boolean recordEvent(
             HttpServletRequest request,
             String cpf,
-            SecurityAuditEventType eventType) {
+            SecurityAuditEventTypeEnum eventType) {
         try {
             securityAuditService.record(
                     eventType,
@@ -134,16 +134,16 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
         }
     }
 
-    private SecurityAuditEventType eventType(RateLimitOperationConfig operation, int status) {
+    private SecurityAuditEventTypeEnum eventType(RateLimitOperationConfig operation, int status) {
         if (status == 429)
             return switch (operation) {
-                case LOGIN -> SecurityAuditEventType.LOGIN_RATE_LIMITED;
-                case CREATE_USER -> SecurityAuditEventType.USER_REGISTRATION_RATE_LIMITED;
+                case LOGIN -> SecurityAuditEventTypeEnum.LOGIN_RATE_LIMITED;
+                case CREATE_USER -> SecurityAuditEventTypeEnum.USER_REGISTRATION_RATE_LIMITED;
             };
         if (status >= HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
             return switch (operation) {
-                case LOGIN -> SecurityAuditEventType.LOGIN_UNAVAILABLE;
-                case CREATE_USER -> SecurityAuditEventType.USER_REGISTRATION_UNAVAILABLE;
+                case LOGIN -> SecurityAuditEventTypeEnum.LOGIN_UNAVAILABLE;
+                case CREATE_USER -> SecurityAuditEventTypeEnum.USER_REGISTRATION_UNAVAILABLE;
             };
         return switch (operation) {
             case LOGIN -> classifyLoginStatus(status);
@@ -151,18 +151,18 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
         };
     }
 
-    private SecurityAuditEventType classifyLoginStatus(int status) {
+    private SecurityAuditEventTypeEnum classifyLoginStatus(int status) {
         return switch (status) {
-            case HttpServletResponse.SC_OK -> SecurityAuditEventType.LOGIN_SUCCEEDED;
-            case HttpServletResponse.SC_UNAUTHORIZED -> SecurityAuditEventType.LOGIN_FAILED;
-            default -> SecurityAuditEventType.LOGIN_REJECTED;
+            case HttpServletResponse.SC_OK -> SecurityAuditEventTypeEnum.LOGIN_SUCCEEDED;
+            case HttpServletResponse.SC_UNAUTHORIZED -> SecurityAuditEventTypeEnum.LOGIN_FAILED;
+            default -> SecurityAuditEventTypeEnum.LOGIN_REJECTED;
         };
     }
 
-    private SecurityAuditEventType classifyRegistrationStatus(int status) {
+    private SecurityAuditEventTypeEnum classifyRegistrationStatus(int status) {
         return status == HttpServletResponse.SC_CREATED
-                ? SecurityAuditEventType.USER_REGISTRATION_SUCCEEDED
-                : SecurityAuditEventType.USER_REGISTRATION_REJECTED;
+                ? SecurityAuditEventTypeEnum.USER_REGISTRATION_SUCCEEDED
+                : SecurityAuditEventTypeEnum.USER_REGISTRATION_REJECTED;
     }
 
     private void writeError(HttpServletResponse response, int status, String message) throws IOException {

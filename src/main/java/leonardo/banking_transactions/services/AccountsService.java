@@ -2,9 +2,9 @@ package leonardo.banking_transactions.services;
 
 import leonardo.banking_transactions.dtos.accounts.AccountCreateRequest;
 import leonardo.banking_transactions.entities.AccountsEntity;
-import leonardo.banking_transactions.exceptions.AccountNotFoundException;
-import leonardo.banking_transactions.exceptions.AccountDataConflictExistingRecord;
-import leonardo.banking_transactions.exceptions.UserNotFoundException;
+import leonardo.banking_transactions.exceptions.accounts.AccountDataConflictExistingRecord;
+import leonardo.banking_transactions.exceptions.accounts.AccountNotFoundException;
+import leonardo.banking_transactions.exceptions.users.UserNotFoundException;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.UsersRepository;
 import org.springframework.stereotype.Service;
