@@ -1,5 +1,11 @@
 package leonardo.banking_transactions.config;
 
+/* It is a list of rules by operation
+  - endpoint
+  - bucket scope name
+  - limit by IP
+  - limit by CPF
+*/
 public enum RateLimitOperationConfig {
     LOGIN("/api/auth/login", "login", 30, 5),
     USER_CREATE("/api/users", "create_user", 10, 3);

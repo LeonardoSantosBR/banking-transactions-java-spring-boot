@@ -15,6 +15,12 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+/* Spring configuration creates and configures the rate-limiting infrastructure
+  - redis client
+  - redis connection
+  - bucket4j ProxyManager
+  - buckets expiration, retries e timeout
+*/
 @Configuration
 public class RateLimitConfig {
     @Bean(destroyMethod = "shutdown")
