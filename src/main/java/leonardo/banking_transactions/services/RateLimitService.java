@@ -4,6 +4,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
+import leonardo.banking_transactions.config.RateLimitOperationConfig;
 import leonardo.banking_transactions.exceptions.RateLimitExceededException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.HexFormat;
 @Service
 public class RateLimitService {
     private static final Duration WINDOW = Duration.ofMinutes(15);
+    private static final int CPF_DIGITS = 11;
     private final ProxyManager<String> buckets;
     private final byte[] hmacKey;
 
@@ -28,19 +30,15 @@ public class RateLimitService {
         this.hmacKey = hmacKey.getBytes(StandardCharsets.UTF_8);
     }
 
-    public void checkAndConsumeLogin(String clientIp, String cpf) {
-        checkAndConsume("login", clientIp, cpf, 30, 5);
-    }
 
-    public void checkAndConsumeUserCreation(String clientIp, String cpf) {
-        checkAndConsume("registration", clientIp, cpf, 10, 3);
-    }
-
-    private void checkAndConsume(String scope, String clientIp, String cpf, long ipLimit, long cpfLimit) {
-        if (!consume(scope + ":ip:" + clientIp, ipLimit))
+    public void checkAndConsume(RateLimitOperationConfig operation, String clientIp, String cpf) {
+        String scope = operation.bucketScope();
+        if (!consume(scope + ":ip:" + clientIp, operation.ipLimit()))
             throw new RateLimitExceededException();
-        String normalizedCpf = cpf.replaceAll("\\D", "");
-        if (!consume(scope + ":cpf:" + hmac(normalizedCpf), cpfLimit))
+        String normalizedCpf = cpf == null ? "" : cpf.replaceAll("\\D", "");
+        if (normalizedCpf.length() != CPF_DIGITS)
+            return;
+        if (!consume(scope + ":cpf:" + hmac(normalizedCpf), operation.cpfLimit()))
             throw new RateLimitExceededException();
     }
 

@@ -9,7 +9,6 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 
 @Configuration
 public class AwsSqsConfig {
-
     @Bean
     ObjectMapper objectMapper() {
         return new ObjectMapper().findAndRegisterModules();
