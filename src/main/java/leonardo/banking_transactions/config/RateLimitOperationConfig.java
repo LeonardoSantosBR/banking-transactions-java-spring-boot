@@ -8,7 +8,7 @@ package leonardo.banking_transactions.config;
 */
 public enum RateLimitOperationConfig {
     LOGIN("/api/auth/login", "login", 30, 5),
-    USER_CREATE("/api/users", "create_user", 10, 3);
+    CREATE_USER("/api/users", "create_user", 10, 3);
 
     private final String path;
     private final String bucketScope;

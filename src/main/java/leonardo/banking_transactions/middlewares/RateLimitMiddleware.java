@@ -138,16 +138,16 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
         if (status == 429)
             return switch (operation) {
                 case LOGIN -> SecurityAuditEventType.LOGIN_RATE_LIMITED;
-                case USER_CREATE -> SecurityAuditEventType.USER_REGISTRATION_RATE_LIMITED;
+                case CREATE_USER -> SecurityAuditEventType.USER_REGISTRATION_RATE_LIMITED;
             };
         if (status >= HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
             return switch (operation) {
                 case LOGIN -> SecurityAuditEventType.LOGIN_UNAVAILABLE;
-                case USER_CREATE -> SecurityAuditEventType.USER_REGISTRATION_UNAVAILABLE;
+                case CREATE_USER -> SecurityAuditEventType.USER_REGISTRATION_UNAVAILABLE;
             };
         return switch (operation) {
             case LOGIN -> classifyLoginStatus(status);
-            case USER_CREATE -> classifyRegistrationStatus(status);
+            case CREATE_USER -> classifyRegistrationStatus(status);
         };
     }
 
