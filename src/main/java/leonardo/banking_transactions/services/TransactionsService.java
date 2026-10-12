@@ -12,6 +12,7 @@ import leonardo.banking_transactions.exceptions.transactions.TransactionNotFound
 import leonardo.banking_transactions.exceptions.validations.InvalidTransactionException;
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.TransactionsRepository;
+import leonardo.banking_transactions.repositories.PixKeysRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,8 @@ public class TransactionsService {
     private final ObjectMapper objectMapper;
     private final BalanceService balanceService;
     private final TransactionTemplate transactionTemplate;
+    private final PixKeysRepository pixKeysRepository;
+    private final PixPayloadValidator pixPayloadValidator;
 
     public TransactionsService(
             TransactionsRepository transactionsRepository,
@@ -34,20 +37,23 @@ public class TransactionsService {
             OutboxEventsService outboxEventsService,
             ObjectMapper objectMapper,
             BalanceService balanceService,
-            TransactionTemplate transactionTemplate) {
+            TransactionTemplate transactionTemplate,
+            PixKeysRepository pixKeysRepository,
+            PixPayloadValidator pixPayloadValidator) {
         this.transactionsRepository = transactionsRepository;
         this.accountsRepository = accountsRepository;
         this.outboxEventsService = outboxEventsService;
         this.objectMapper = objectMapper;
         this.balanceService = balanceService;
         this.transactionTemplate = transactionTemplate;
+        this.pixKeysRepository = pixKeysRepository;
+        this.pixPayloadValidator = pixPayloadValidator;
     }
 
     public TransactionsEntity create(TransactionCreateRequest request) {
         var existing = transactionsRepository.findByIdempotencyKey(request.idempotencyKey());
         if (existing.isPresent())
             return existing.get();
-
         try {
             return transactionTemplate.execute(status -> createInTransaction(request));
         } catch (DataIntegrityViolationException exception) {
@@ -55,6 +61,44 @@ public class TransactionsService {
                     .findByIdempotencyKey(request.idempotencyKey())
                     .orElseThrow(TransactionDataConflictExistingRecord::new);
         }
+    }
+
+    private TransactionsEntity createInTransaction(TransactionCreateRequest request) {
+        if (request.payerAccountId().equals(request.payeeAccountId()))
+            throw new InvalidTransactionException("Payer and payee accounts must be different");
+        var payer = accountsRepository.findById(request.payerAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(request.payerAccountId()));
+        var payee = accountsRepository.findById(request.payeeAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(request.payeeAccountId()));
+        var pixKey = pixKeysRepository.findByKeyValueAndActiveTrue(request.pixKeyUsed())
+                .orElseThrow(() -> new InvalidTransactionException("Pix key is invalid or inactive"));
+        if (!pixKey.getAccount().getId().equals(payee.getId()))
+            throw new InvalidTransactionException("Pix key does not belong to payee account");
+        pixPayloadValidator.validate(request.qrCodeType(), request.qrCodePayload(), request.txid());
+        var t = new TransactionsEntity();
+        t.setEndToEndId("E" + UUID.randomUUID().toString().replace("-", ""));
+        t.setIdempotencyKey(request.idempotencyKey());
+        t.setPayerAccount(payer);
+        t.setPayeeAccount(payee);
+        t.setPixKeyUsed(request.pixKeyUsed());
+        t.setAmount(request.amount());
+        t.setQrCodeType(request.qrCodeType() == null ? null : request.qrCodeType().name());
+        t.setQrCodePayload(request.qrCodePayload());
+        t.setTxid(request.txid());
+        t.setCurrency(request.currency() == null ? "BRL" : request.currency().name());
+        t.setChannel(request.channel() == null ? null : request.channel().name());
+        t.setDescription(request.description());
+        var transaction = transactionsRepository.save(t);
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("amount", transaction.getAmount());
+        payload.put("currency", transaction.getCurrency());
+        payload.put("pixKeyUsed", transaction.getPixKeyUsed());
+        payload.put("payerAccountId", payer.getId().toString());
+        payload.put("payeeAccountId", payee.getId().toString());
+        payload.put("qrCodeType", transaction.getQrCodeType());
+        payload.put("txid", transaction.getTxid());
+        outboxEventsService.create(transaction, "PixTransactionRequested", payload);
+        return transaction;
     }
 
     @Transactional(readOnly = true)
@@ -88,38 +132,5 @@ public class TransactionsService {
             transaction.setDescription("Rejected: insufficient balance");
         }
         transactionsRepository.save(transaction);
-    }
-
-    private TransactionsEntity createInTransaction(TransactionCreateRequest request) {
-        if (request.payerAccountId().equals(request.payeeAccountId()))
-            throw new InvalidTransactionException("Payer and payee accounts must be different");
-        var payer = accountsRepository.findById(request.payerAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.payerAccountId()));
-        var payee = accountsRepository.findById(request.payeeAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.payeeAccountId()));
-        var t = new TransactionsEntity();
-        t.setEndToEndId("E" + UUID.randomUUID().toString().replace("-", ""));
-        t.setIdempotencyKey(request.idempotencyKey());
-        t.setPayerAccount(payer);
-        t.setPayeeAccount(payee);
-        t.setPixKeyUsed(request.pixKeyUsed());
-        t.setAmount(request.amount());
-        t.setQrCodeType(request.qrCodeType());
-        t.setQrCodePayload(request.qrCodePayload());
-        t.setTxid(request.txid());
-        t.setCurrency(request.currency() == null ? "BRL" : request.currency());
-        t.setChannel(request.channel());
-        t.setDescription(request.description());
-        var transaction = transactionsRepository.save(t);
-        ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("amount", transaction.getAmount());
-        payload.put("currency", transaction.getCurrency());
-        payload.put("pixKeyUsed", transaction.getPixKeyUsed());
-        payload.put("payerAccountId", payer.getId().toString());
-        payload.put("payeeAccountId", payee.getId().toString());
-        payload.put("qrCodeType", transaction.getQrCodeType());
-        payload.put("txid", transaction.getTxid());
-        outboxEventsService.create(transaction, "PixTransactionRequested", payload);
-        return transaction;
     }
 }

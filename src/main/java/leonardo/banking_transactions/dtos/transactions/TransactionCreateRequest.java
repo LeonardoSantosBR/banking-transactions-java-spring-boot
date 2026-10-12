@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
+import leonardo.banking_transactions.enums.CurrencyEnum;
+import leonardo.banking_transactions.enums.QrCodeTypeEnum;
+import leonardo.banking_transactions.enums.TransactionChannelEnum;
 
 public record TransactionCreateRequest(
         @NotBlank @Size(max = 100) String idempotencyKey,
@@ -13,10 +16,10 @@ public record TransactionCreateRequest(
         @NotNull UUID payeeAccountId,
         @NotBlank @Size(max = 150) String pixKeyUsed,
         @NotNull @DecimalMin(value = "0.0001") BigDecimal amount,
-        @Size(max = 20) String qrCodeType,
-        String qrCodePayload,
+        QrCodeTypeEnum qrCodeType,
+        @Size(max = 10000) String qrCodePayload,
         @Size(max = 100) String txid,
-        @Size(max = 3) String currency,
-        @Size(max = 30) String channel,
+        CurrencyEnum currency,
+        TransactionChannelEnum channel,
         @Size(max = 200) String description) {
 }
