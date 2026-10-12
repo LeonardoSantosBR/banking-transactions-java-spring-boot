@@ -13,7 +13,9 @@ import leonardo.banking_transactions.exceptions.validations.InvalidTransactionEx
 import leonardo.banking_transactions.repositories.AccountsRepository;
 import leonardo.banking_transactions.repositories.TransactionsRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,24 +26,71 @@ public class TransactionsService {
     private final OutboxEventsService outboxEventsService;
     private final ObjectMapper objectMapper;
     private final BalanceService balanceService;
+    private final TransactionTemplate transactionTemplate;
 
     public TransactionsService(
             TransactionsRepository transactionsRepository,
             AccountsRepository accountsRepository,
             OutboxEventsService outboxEventsService,
             ObjectMapper objectMapper,
-            BalanceService balanceService) {
+            BalanceService balanceService,
+            TransactionTemplate transactionTemplate) {
         this.transactionsRepository = transactionsRepository;
         this.accountsRepository = accountsRepository;
         this.outboxEventsService = outboxEventsService;
         this.objectMapper = objectMapper;
         this.balanceService = balanceService;
+        this.transactionTemplate = transactionTemplate;
+    }
+
+    public TransactionsEntity create(TransactionCreateRequest request) {
+        var existing = transactionsRepository.findByIdempotencyKey(request.idempotencyKey());
+        if (existing.isPresent())
+            return existing.get();
+
+        try {
+            return transactionTemplate.execute(status -> createInTransaction(request));
+        } catch (DataIntegrityViolationException exception) {
+            return transactionsRepository
+                    .findByIdempotencyKey(request.idempotencyKey())
+                    .orElseThrow(TransactionDataConflictExistingRecord::new);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<TransactionsEntity> findAll(UUID userId) {
+        return transactionsRepository.findAllByPayerAccount_User_Id(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public TransactionsEntity findById(UUID id, UUID userId) {
+        return transactionsRepository.findByIdAndPayerAccount_User_Id(id, userId)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
     }
 
     @Transactional
-    public TransactionsEntity create(TransactionCreateRequest request) {
-        if (transactionsRepository.existsByIdempotencyKey(request.idempotencyKey()))
-            throw new TransactionDataConflictExistingRecord();
+    public void processSettlement(UUID id, boolean rejected) {
+        var transaction = transactionsRepository
+                .findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+        if (transaction.getStatus() != TransactionStatusEnum.PROCESSING)
+            return;
+
+        if (rejected) {
+            transaction.setStatus(TransactionStatusEnum.REJECTED);
+        } else if (balanceService.transfer(
+                transaction.getPayerAccount(),
+                transaction.getPayeeAccount(),
+                transaction.getAmount())) {
+            transaction.setStatus(TransactionStatusEnum.SETTLED);
+        } else {
+            transaction.setStatus(TransactionStatusEnum.REJECTED);
+            transaction.setDescription("Rejected: insufficient balance");
+        }
+        transactionsRepository.save(transaction);
+    }
+
+    private TransactionsEntity createInTransaction(TransactionCreateRequest request) {
         if (request.payerAccountId().equals(request.payeeAccountId()))
             throw new InvalidTransactionException("Payer and payee accounts must be different");
         var payer = accountsRepository.findById(request.payerAccountId())
@@ -72,34 +121,5 @@ public class TransactionsService {
         payload.put("txid", transaction.getTxid());
         outboxEventsService.create(transaction, "PixTransactionRequested", payload);
         return transaction;
-    }
-
-    @Transactional(readOnly = true)
-    public List<TransactionsEntity> findAll(UUID userId) {
-        return transactionsRepository.findAllByPayerAccount_User_Id(userId);
-    }
-
-    @Transactional(readOnly = true)
-    public TransactionsEntity findById(UUID id, UUID userId) {
-        return transactionsRepository.findByIdAndPayerAccount_User_Id(id, userId)
-                .orElseThrow(() -> new TransactionNotFoundException(id));
-    }
-
-    @Transactional
-    public void processSettlement(UUID id, boolean rejected) {
-        var transaction = transactionsRepository.findById(id)
-                .orElseThrow(() -> new TransactionNotFoundException(id));
-        if (transaction.getStatus() != TransactionStatusEnum.PROCESSING)
-            return;
-        if (rejected) {
-            transaction.setStatus(TransactionStatusEnum.REJECTED);
-        } else if (balanceService.transfer(transaction.getPayerAccount(), transaction.getPayeeAccount(),
-                transaction.getAmount())) {
-            transaction.setStatus(TransactionStatusEnum.SETTLED);
-        } else {
-            transaction.setStatus(TransactionStatusEnum.REJECTED);
-            transaction.setDescription("Rejected: insufficient balance");
-        }
-        transactionsRepository.save(transaction);
     }
 }
