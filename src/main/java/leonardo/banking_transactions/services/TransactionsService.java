@@ -115,7 +115,7 @@ public class TransactionsService {
     @Transactional
     public void processSettlement(UUID id, boolean rejected) {
         var transaction = transactionsRepository
-                .findById(id)
+                .findByIdForUpdate(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
         if (transaction.getStatus() != TransactionStatusEnum.PROCESSING)
             return;
