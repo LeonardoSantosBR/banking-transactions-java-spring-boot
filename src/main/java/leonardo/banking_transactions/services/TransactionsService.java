@@ -1,6 +1,7 @@
 package leonardo.banking_transactions.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import leonardo.banking_transactions.dtos.transactions.TransactionCreateRequest;
@@ -113,7 +114,7 @@ public class TransactionsService {
     }
 
     @Transactional
-    public void processSettlement(UUID id, boolean rejected) {
+    public void executeFinancialSettlement(UUID id, boolean rejected) {
         var transaction = transactionsRepository
                 .findByIdForUpdate(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
@@ -132,5 +133,22 @@ public class TransactionsService {
             transaction.setDescription("Rejected: insufficient balance");
         }
         transactionsRepository.save(transaction);
+    }
+
+    @Transactional
+    public void validateConsistencyMessageSQS(UUID eventId, UUID id, String idempotencyKey, JsonNode payload) {
+        outboxEventsService.findByIdAndTransactionIdAndEventType(eventId, id, "PixTransactionRequested")
+                .orElseThrow(() -> new InvalidTransactionException("Transaction event is not registered"));
+        var transaction = transactionsRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+        if (!transaction.getIdempotencyKey().equals(idempotencyKey)
+                || transaction.getAmount().compareTo(payload.path("amount").decimalValue()) != 0
+                || !transaction.getCurrency().equals(payload.path("currency").asText())
+                || !transaction.getPayerAccount().getId()
+                        .equals(UUID.fromString(payload.path("payerAccountId").asText()))
+                || !transaction.getPayeeAccount().getId()
+                        .equals(UUID.fromString(payload.path("payeeAccountId").asText())))
+            throw new InvalidTransactionException("Transaction event payload does not match stored transaction");
+        executeFinancialSettlement(id, payload.path("reject").asBoolean(false));
     }
 }

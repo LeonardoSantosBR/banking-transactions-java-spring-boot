@@ -36,7 +36,7 @@ public class SqsService {
             message.put("eventType", event.getEventType());
             message.put("transactionId", event.getTransaction().getId().toString());
             message.put("idempotencyKey", event.getTransaction().getIdempotencyKey());
-            message.putPOJO("createdAt", event.getCreatedAt());
+            message.put("createdAt", event.getCreatedAt().toString());
             message.set("payload", event.getPayload());
 
             sqsClient.sendMessage(SendMessageRequest.builder()

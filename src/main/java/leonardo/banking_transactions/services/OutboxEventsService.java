@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class OutboxEventsService {
@@ -23,6 +25,11 @@ public class OutboxEventsService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<OutboxEventsEntity> findByIdAndTransactionIdAndEventType(UUID id, UUID transactionId,
+            String eventType) {
+        return repository.findByIdAndTransactionIdAndEventType(id, transactionId, eventType);
+    }
+
     public List<OutboxEventsEntity> findPending(int batchSize) {
         if (batchSize < 1)
             throw new IllegalArgumentException("Batch size must be greater than zero");

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,9 +46,45 @@ public class TransactionEventConsumer {
 
     private void process(Message message) throws IOException {
         JsonNode root = objectMapper.readTree(message.body());
-        String transactionId = requiredText(root, "transactionId");
-        boolean rejected = root.path("payload").path("reject").asBoolean(false);
-        transactionsService.processSettlement(UUID.fromString(transactionId), rejected);
+        UUID eventId = requiredUuid(root, "eventId");
+        String eventType = requiredText(root, "eventType");
+        if (!"PixTransactionRequested".equals(eventType))
+            throw new IllegalArgumentException("Unsupported event type");
+        UUID transactionId = requiredUuid(root, "transactionId");
+        String idempotencyKey = requiredText(root, "idempotencyKey");
+        validateCreatedAt(root);
+        JsonNode payload = root.path("payload");
+        if (!payload.isObject() || !payload.path("amount").isNumber()
+                || payload.path("amount").decimalValue().compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("Invalid transaction payload");
+        if (!payload.path("currency").isTextual()
+                || !payload.path("payerAccountId").isTextual()
+                || !payload.path("payeeAccountId").isTextual())
+            throw new IllegalArgumentException("Incomplete transaction payload");
+        if (payload.has("reject") && !payload.path("reject").isBoolean())
+            throw new IllegalArgumentException("Invalid reject flag");
+        transactionsService.validateConsistencyMessageSQS(eventId, transactionId, idempotencyKey, payload);
+    }
+
+    private void validateCreatedAt(JsonNode node) {
+        JsonNode createdAt = node.get("createdAt");
+        try {
+            if (createdAt != null && createdAt.isNumber()) {
+                OffsetDateTime.ofInstant(java.time.Instant.ofEpochMilli((long) (createdAt.asDouble() * 1000)), java.time.ZoneOffset.UTC);
+            } else {
+                OffsetDateTime.parse(requiredText(node, "createdAt"));
+            }
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("Invalid createdAt", exception);
+        }
+    }
+
+    private UUID requiredUuid(JsonNode node, String field) {
+        try {
+            return UUID.fromString(requiredText(node, field));
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Invalid UUID field: " + field, e);
+        }
     }
 
     private String requiredText(JsonNode node, String field) {
