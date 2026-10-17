@@ -18,8 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @Service
 public class TransactionsService {
@@ -103,8 +107,39 @@ public class TransactionsService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionsEntity> findAll(UUID userId) {
-        return transactionsRepository.findAllByPayerAccount_User_Id(userId);
+    public Page<TransactionsEntity> findAll(
+            UUID userId,
+            TransactionStatusEnum status,
+            OffsetDateTime createdFrom,
+            OffsetDateTime createdTo,
+            BigDecimal amountFrom,
+            BigDecimal amountTo,
+            String txid,
+            String endToEndId,
+            Pageable pageable) {
+        Specification<TransactionsEntity> specification = (root, query, cb) -> cb.or(
+                cb.equal(root.get("payerAccount").get("user").get("id"), userId),
+                cb.equal(root.get("payeeAccount").get("user").get("id"), userId));
+
+        if (status != null)
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        if (createdFrom != null)
+            specification = specification
+                    .and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), createdFrom));
+        if (createdTo != null)
+            specification = specification
+                    .and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), createdTo));
+        if (amountFrom != null)
+            specification = specification
+                    .and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("amount"), amountFrom));
+        if (amountTo != null)
+            specification = specification.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("amount"), amountTo));
+        if (txid != null && !txid.isBlank())
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("txid"), txid));
+        if (endToEndId != null && !endToEndId.isBlank())
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("endToEndId"), endToEndId));
+
+        return transactionsRepository.findAll(specification, pageable);
     }
 
     @Transactional(readOnly = true)

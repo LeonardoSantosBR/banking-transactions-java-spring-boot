@@ -9,8 +9,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import leonardo.banking_transactions.enums.TransactionStatusEnum;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -34,8 +40,25 @@ public class TransactionsController {
     }
 
     @GetMapping
-    public List<TransactionResponse> findAll(HttpServletRequest request) {
-        return transactionsService.findAll(authenticatedUserId(request)).stream().map(TransactionResponse::from).toList();
+    public Page<TransactionResponse> findAll(
+            @RequestParam(required = false) TransactionStatusEnum status,
+            @RequestParam(required = false) OffsetDateTime createdFrom,
+            @RequestParam(required = false) OffsetDateTime createdTo,
+            @RequestParam(required = false) BigDecimal amountFrom,
+            @RequestParam(required = false) BigDecimal amountTo,
+            @RequestParam(required = false) String txid,
+            @RequestParam(required = false) String endToEndId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            HttpServletRequest request) {
+        if (page < 0 || size < 1 || size > 100)
+            throw new IllegalArgumentException("page must be non-negative and size must be between 1 and 100");
+        Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        return transactionsService.findAll(authenticatedUserId(request), status, createdFrom, createdTo,
+                amountFrom, amountTo, txid, endToEndId, pageable).map(TransactionResponse::from);
     }
 
     @GetMapping("/{id}")

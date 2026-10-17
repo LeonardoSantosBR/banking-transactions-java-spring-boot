@@ -2,6 +2,7 @@ package leonardo.banking_transactions.repositories;
 
 import leonardo.banking_transactions.entities.TransactionsEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import jakarta.persistence.LockModeType;
@@ -9,7 +10,7 @@ import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 
-public interface TransactionsRepository extends JpaRepository<TransactionsEntity, UUID> {
+public interface TransactionsRepository extends JpaRepository<TransactionsEntity, UUID>, JpaSpecificationExecutor<TransactionsEntity> {
     Optional<TransactionsEntity> findByIdempotencyKey(String idempotencyKey);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from TransactionsEntity t where t.id = :id")
