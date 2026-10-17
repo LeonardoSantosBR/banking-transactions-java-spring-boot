@@ -66,6 +66,13 @@ public class TransactionsController {
         return TransactionResponse.from(transactionsService.findById(id, authenticatedUserId(request)));
     }
 
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<TransactionResponse> refund(@PathVariable UUID id, HttpServletRequest request) {
+        var refund = transactionsService.refund(id, authenticatedUserId(request));
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{refundId}").buildAndExpand(refund.getId()).toUri();
+        return ResponseEntity.created(location).body(TransactionResponse.from(refund));
+    }
+
     private UUID authenticatedUserId(HttpServletRequest request) {
         return (UUID) request.getAttribute(JwtAuthenticationMiddleware.AUTHENTICATED_USER_ID_ATTRIBUTE);
     }

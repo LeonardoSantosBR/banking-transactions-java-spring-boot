@@ -18,4 +18,5 @@ public interface TransactionsRepository extends JpaRepository<TransactionsEntity
     boolean existsByIdempotencyKey(String idempotencyKey);
     List<TransactionsEntity> findAllByPayerAccount_User_Id(UUID userId);
     Optional<TransactionsEntity> findByIdAndPayerAccount_User_Id(UUID id, UUID userId);
+    Optional<TransactionsEntity> findByRefundOfTransaction_Id(UUID transactionId);
 }

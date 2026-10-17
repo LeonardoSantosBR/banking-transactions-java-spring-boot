@@ -48,7 +48,7 @@ public class TransactionEventConsumer {
         JsonNode root = objectMapper.readTree(message.body());
         UUID eventId = requiredUuid(root, "eventId");
         String eventType = requiredText(root, "eventType");
-        if (!"PixTransactionRequested".equals(eventType))
+        if (!"PixTransactionRequested".equals(eventType) && !"PixTransactionRefundRequested".equals(eventType))
             throw new IllegalArgumentException("Unsupported event type");
         UUID transactionId = requiredUuid(root, "transactionId");
         String idempotencyKey = requiredText(root, "idempotencyKey");
@@ -63,7 +63,7 @@ public class TransactionEventConsumer {
             throw new IllegalArgumentException("Incomplete transaction payload");
         if (payload.has("reject") && !payload.path("reject").isBoolean())
             throw new IllegalArgumentException("Invalid reject flag");
-        transactionsService.validateConsistencyMessageSQS(eventId, transactionId, idempotencyKey, payload);
+        transactionsService.validateConsistencyMessageSQS(eventId, transactionId, idempotencyKey, payload, eventType);
     }
 
     private void validateCreatedAt(JsonNode node) {

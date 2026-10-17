@@ -45,6 +45,10 @@ public class TransactionsEntity {
     @Column(name = "idempotency_key", nullable = false, length = 100)
     private String idempotencyKey;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refund_of_transaction_id")
+    private TransactionsEntity refundOfTransaction;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payer_account_id", nullable = false)
     private AccountsEntity payerAccount;
