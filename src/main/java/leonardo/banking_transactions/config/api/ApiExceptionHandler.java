@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.api;
 
 import java.time.Instant;
 import java.util.Map;
@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class ExceptionHandlerStandard {
+public class ApiExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
         Map<String, Object> body = Map.of(

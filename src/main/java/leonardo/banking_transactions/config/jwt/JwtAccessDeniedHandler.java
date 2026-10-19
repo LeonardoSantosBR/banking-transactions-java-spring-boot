@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;

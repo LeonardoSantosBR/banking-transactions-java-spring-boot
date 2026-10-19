@@ -2,7 +2,7 @@ package leonardo.banking_transactions.exceptions.users;
 
 import org.springframework.http.HttpStatus;
 
-import leonardo.banking_transactions.config.ApiException;
+import leonardo.banking_transactions.config.api.ApiException;
 
 public class UserNotAllowedException extends ApiException {
     public UserNotAllowedException() {

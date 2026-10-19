@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.api;
 
 import org.springframework.http.HttpStatus;
 

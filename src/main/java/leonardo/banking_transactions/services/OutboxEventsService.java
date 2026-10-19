@@ -5,6 +5,9 @@ import leonardo.banking_transactions.entities.OutboxEventsEntity;
 import leonardo.banking_transactions.entities.TransactionsEntity;
 import leonardo.banking_transactions.enums.OutboxEventStatusEnum;
 import leonardo.banking_transactions.repositories.OutboxEventsRepository;
+import leonardo.banking_transactions.services.aws.SqsService;
+import leonardo.banking_transactions.services.aws.SnsService;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +21,12 @@ import java.util.UUID;
 public class OutboxEventsService {
     private final OutboxEventsRepository repository;
     private final SqsService sqsService;
+    private final SnsService snsService;
 
-    public OutboxEventsService(OutboxEventsRepository repository, SqsService sqsService) {
+    public OutboxEventsService(OutboxEventsRepository repository, SqsService sqsService, SnsService snsService) {
         this.repository = repository;
         this.sqsService = sqsService;
+        this.snsService = snsService;
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +66,7 @@ public class OutboxEventsService {
 
     public void publish(OutboxEventsEntity event) {
         sqsService.sendTransactionEvent(event);
+        snsService.publishTransactionEvent(event);
         markAsPublished(event);
     }
 }

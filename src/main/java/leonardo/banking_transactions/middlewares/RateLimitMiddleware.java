@@ -10,7 +10,7 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import leonardo.banking_transactions.config.RateLimitOperationConfig;
+import leonardo.banking_transactions.config.rateLimit.RateLimitOperationConfig;
 import leonardo.banking_transactions.enums.SecurityAuditEventTypeEnum;
 import leonardo.banking_transactions.exceptions.RateLimitExceededException;
 import leonardo.banking_transactions.services.RateLimitService;

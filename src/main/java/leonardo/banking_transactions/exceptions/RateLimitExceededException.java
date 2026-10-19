@@ -1,7 +1,8 @@
 package leonardo.banking_transactions.exceptions;
 
-import leonardo.banking_transactions.config.ApiException;
 import org.springframework.http.HttpStatus;
+
+import leonardo.banking_transactions.config.api.ApiException;
 
 public class RateLimitExceededException extends ApiException {
     public RateLimitExceededException() {

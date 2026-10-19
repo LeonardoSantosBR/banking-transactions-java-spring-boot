@@ -1,7 +1,9 @@
 package leonardo.banking_transactions.exceptions.transactions;
 
-import leonardo.banking_transactions.config.ApiException;
 import org.springframework.http.HttpStatus;
+
+import leonardo.banking_transactions.config.api.ApiException;
+
 import java.util.UUID;
 
 public class TransactionNotFoundException extends ApiException {

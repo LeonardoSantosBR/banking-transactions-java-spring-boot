@@ -1,7 +1,8 @@
 package leonardo.banking_transactions.exceptions.transactions;
 
-import leonardo.banking_transactions.config.ApiException;
 import org.springframework.http.HttpStatus;
+
+import leonardo.banking_transactions.config.api.ApiException;
 
 public class TransactionDataConflictExistingRecord extends ApiException {
     public TransactionDataConflictExistingRecord() {

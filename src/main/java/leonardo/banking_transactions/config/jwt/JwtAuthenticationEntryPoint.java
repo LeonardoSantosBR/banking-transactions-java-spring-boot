@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.jwt;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

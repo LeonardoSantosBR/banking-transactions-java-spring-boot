@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.rateLimit;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.codec.RedisCodec;

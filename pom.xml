@@ -42,6 +42,11 @@
 			<version>${aws.sdk.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sns</artifactId>
+			<version>${aws.sdk.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
@@ -194,3 +199,4 @@
 	</build>
 
 </project>
+

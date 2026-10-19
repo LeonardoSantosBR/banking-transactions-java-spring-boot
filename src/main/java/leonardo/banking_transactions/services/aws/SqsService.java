@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.services;
+package leonardo.banking_transactions.services.aws;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

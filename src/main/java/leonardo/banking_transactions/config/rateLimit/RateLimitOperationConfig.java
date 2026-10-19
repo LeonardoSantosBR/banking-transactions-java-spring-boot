@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.config;
+package leonardo.banking_transactions.config.rateLimit;
 
 /* It is a list of rules by operation
   - endpoint

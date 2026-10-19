@@ -68,38 +68,6 @@ public class TransactionsService {
         }
     }
 
-    public TransactionsEntity refund(UUID transactionId, UUID userId) {
-        return transactionTemplate.execute(status -> {
-            var original = transactionsRepository.findByIdForUpdate(transactionId)
-                    .orElseThrow(() -> new TransactionNotFoundException(transactionId));
-            boolean owner = original.getPayerAccount().getUser().getId().equals(userId)
-                    || original.getPayeeAccount().getUser().getId().equals(userId);
-            if (!owner) throw new TransactionNotFoundException(transactionId);
-            if (original.getStatus() != TransactionStatusEnum.SETTLED)
-                throw new InvalidTransactionException("Only settled transactions can be refunded");
-            var existing = transactionsRepository.findByRefundOfTransaction_Id(transactionId);
-            if (existing.isPresent()) return existing.get();
-            var refund = new TransactionsEntity();
-            refund.setRefundOfTransaction(original);
-            refund.setEndToEndId("E" + UUID.randomUUID().toString().replace("-", ""));
-            refund.setIdempotencyKey("refund:" + transactionId);
-            refund.setPayerAccount(original.getPayeeAccount());
-            refund.setPayeeAccount(original.getPayerAccount());
-            refund.setPixKeyUsed(original.getPixKeyUsed()); refund.setAmount(original.getAmount());
-            refund.setCurrency(original.getCurrency()); refund.setChannel(original.getChannel());
-            refund.setTxid(original.getTxid()); refund.setDescription("Refund of transaction " + transactionId);
-            var saved = transactionsRepository.save(refund);
-            ObjectNode payload = objectMapper.createObjectNode();
-            payload.put("amount", saved.getAmount()); payload.put("currency", saved.getCurrency());
-            payload.put("pixKeyUsed", saved.getPixKeyUsed());
-            payload.put("payerAccountId", saved.getPayerAccount().getId().toString());
-            payload.put("payeeAccountId", saved.getPayeeAccount().getId().toString());
-            payload.put("refundOfTransactionId", transactionId.toString());
-            outboxEventsService.create(saved, "PixTransactionRefundRequested", payload);
-            return saved;
-        });
-    }
-
     private TransactionsEntity createInTransaction(TransactionCreateRequest request) {
         if (request.payerAccountId().equals(request.payeeAccountId()))
             throw new InvalidTransactionException("Payer and payee accounts must be different");
@@ -136,6 +104,44 @@ public class TransactionsService {
         payload.put("txid", transaction.getTxid());
         outboxEventsService.create(transaction, "PixTransactionRequested", payload);
         return transaction;
+    }
+
+    public TransactionsEntity refund(UUID transactionId, UUID userId) {
+        return transactionTemplate.execute(status -> {
+            var original = transactionsRepository.findByIdForUpdate(transactionId)
+                    .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+            boolean owner = original.getPayerAccount().getUser().getId().equals(userId)
+                    || original.getPayeeAccount().getUser().getId().equals(userId);
+            if (!owner)
+                throw new TransactionNotFoundException(transactionId);
+            if (original.getStatus() != TransactionStatusEnum.SETTLED)
+                throw new InvalidTransactionException("Only settled transactions can be refunded");
+            var existing = transactionsRepository.findByRefundOfTransaction_Id(transactionId);
+            if (existing.isPresent())
+                return existing.get();
+            var refund = new TransactionsEntity();
+            refund.setRefundOfTransaction(original);
+            refund.setEndToEndId("E" + UUID.randomUUID().toString().replace("-", ""));
+            refund.setIdempotencyKey("refund:" + transactionId);
+            refund.setPayerAccount(original.getPayeeAccount());
+            refund.setPayeeAccount(original.getPayerAccount());
+            refund.setPixKeyUsed(original.getPixKeyUsed());
+            refund.setAmount(original.getAmount());
+            refund.setCurrency(original.getCurrency());
+            refund.setChannel(original.getChannel());
+            refund.setTxid(original.getTxid());
+            refund.setDescription("Refund of transaction " + transactionId);
+            var saved = transactionsRepository.save(refund);
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.put("amount", saved.getAmount());
+            payload.put("currency", saved.getCurrency());
+            payload.put("pixKeyUsed", saved.getPixKeyUsed());
+            payload.put("payerAccountId", saved.getPayerAccount().getId().toString());
+            payload.put("payeeAccountId", saved.getPayeeAccount().getId().toString());
+            payload.put("refundOfTransactionId", transactionId.toString());
+            outboxEventsService.create(saved, "PixTransactionRefundRequested", payload);
+            return saved;
+        });
     }
 
     @Transactional(readOnly = true)
@@ -181,7 +187,8 @@ public class TransactionsService {
     }
 
     @Transactional
-    public void validateConsistencyMessageSQS(UUID eventId, UUID id, String idempotencyKey, JsonNode payload, String eventType) {
+    public void validateConsistencyMessageSQS(UUID eventId, UUID id, String idempotencyKey, JsonNode payload,
+            String eventType) {
         outboxEventsService.findByIdAndTransactionIdAndEventType(eventId, id, eventType)
                 .orElseThrow(() -> new InvalidTransactionException("Transaction event is not registered"));
         var transaction = transactionsRepository.findByIdForUpdate(id)
@@ -205,7 +212,8 @@ public class TransactionsService {
     public void executeTransactionRefundSettlement(UUID refundId) {
         var refund = transactionsRepository.findByIdForUpdate(refundId)
                 .orElseThrow(() -> new TransactionNotFoundException(refundId));
-        if (refund.getStatus() != TransactionStatusEnum.PROCESSING) return;
+        if (refund.getStatus() != TransactionStatusEnum.PROCESSING)
+            return;
         var original = refund.getRefundOfTransaction();
         if (original == null || original.getStatus() != TransactionStatusEnum.SETTLED)
             throw new InvalidTransactionException("Refund source transaction is not settled");

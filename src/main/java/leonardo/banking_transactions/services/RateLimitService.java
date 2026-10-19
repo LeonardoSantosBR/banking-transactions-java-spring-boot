@@ -4,7 +4,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
-import leonardo.banking_transactions.config.RateLimitOperationConfig;
+import leonardo.banking_transactions.config.rateLimit.RateLimitOperationConfig;
 import leonardo.banking_transactions.exceptions.RateLimitExceededException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
