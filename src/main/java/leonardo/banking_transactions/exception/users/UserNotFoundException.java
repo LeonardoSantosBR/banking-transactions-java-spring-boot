@@ -1,0 +1,13 @@
+package leonardo.banking_transactions.exception.users;
+
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+
+import leonardo.banking_transactions.config.api.ApiException;
+
+public class UserNotFoundException extends ApiException {
+     public UserNotFoundException(UUID id) {
+        super(HttpStatus.NOT_FOUND, "User not found:" + id);
+    }
+}

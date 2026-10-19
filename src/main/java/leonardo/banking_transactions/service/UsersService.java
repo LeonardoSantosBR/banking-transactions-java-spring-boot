@@ -1,0 +1,117 @@
+package leonardo.banking_transactions.service;
+
+import leonardo.banking_transactions.dto.users.UserCreateRequest;
+import leonardo.banking_transactions.dto.users.UserUpdateRequest;
+import leonardo.banking_transactions.entity.UserTokenVersionsEntity;
+import leonardo.banking_transactions.entity.UsersEntity;
+import leonardo.banking_transactions.exception.users.UserDataConflictExistingRecord;
+import leonardo.banking_transactions.exception.users.UserNotAllowedException;
+import leonardo.banking_transactions.exception.users.UserNotFoundException;
+import leonardo.banking_transactions.repository.UserTokenVersionsRepository;
+import leonardo.banking_transactions.repository.UsersRepository;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class UsersService {
+    private final UsersRepository usersRepository;
+    private final UserTokenVersionsRepository tokenVersionsRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UsersService(
+            UsersRepository usersRepository,
+            UserTokenVersionsRepository userTokenVersionsRepository,
+            PasswordEncoder passwordEncoder) {
+        this.usersRepository = usersRepository;
+        this.tokenVersionsRepository = userTokenVersionsRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    public UsersEntity create(UserCreateRequest request) {
+        UsersEntity user = new UsersEntity();
+        user.setName(request.name());
+        user.setCpf(request.cpf());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        validateUniqueFields(user, null);
+        UsersEntity savedUser = usersRepository.save(user);
+        tokenVersionsRepository.save(new UserTokenVersionsEntity(savedUser.getId(), 0));
+        return savedUser;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UsersEntity> findAllActive() {
+        return usersRepository.findByDeletedAtIsNull();
+    }
+
+    @Transactional(readOnly = true)
+    public UsersEntity findById(UUID id) {
+        return usersRepository
+                .findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    @Transactional
+    public UsersEntity update(UUID id, UserUpdateRequest request) {
+        UsersEntity user = new UsersEntity();
+        user.setName(request.name());
+        user.setCpf(request.cpf());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setPassword(request.password());
+        return updateUserEntity(id, user);
+    }
+
+    @Transactional
+    private UsersEntity updateUserEntity(UUID id, UsersEntity user) {
+        UsersEntity currentUser = findById(id);
+        validateUniqueFields(user, id);
+        currentUser.setName(user.getName());
+        currentUser.setCpf(user.getCpf());
+        currentUser.setEmail(user.getEmail());
+        currentUser.setPhone(user.getPhone());
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            currentUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            incrementTokenVersion(id);
+        }
+        return usersRepository.save(currentUser);
+    }
+
+    @Transactional
+    public void delete(UUID authenticatedUserId, UUID id) {
+        if (!id.equals(authenticatedUserId))
+            throw new UserNotAllowedException();
+        UsersEntity user = findById(id);
+        user.setDeletedAt(OffsetDateTime.now());
+        incrementTokenVersion(id);
+        usersRepository.save(user);
+    }
+
+    private void incrementTokenVersion(UUID userId) {
+        var tokenVersion = tokenVersionsRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Token version is missing for user"));
+        tokenVersion.setTokenVersion(tokenVersion.getTokenVersion() + 1);
+        tokenVersionsRepository.save(tokenVersion);
+    }
+
+    private void validateUniqueFields(UsersEntity user, UUID currentUserId) {
+        boolean cpfAlreadyExists = currentUserId == null
+                ? usersRepository.existsByCpf(user.getCpf())
+                : usersRepository.existsByCpfAndIdNot(user.getCpf(), currentUserId);
+        boolean emailAlreadyExists = currentUserId == null
+                ? usersRepository.existsByEmail(user.getEmail())
+                : usersRepository.existsByEmailAndIdNot(user.getEmail(), currentUserId);
+        if (cpfAlreadyExists)
+            throw new UserDataConflictExistingRecord();
+        if (emailAlreadyExists)
+            throw new UserDataConflictExistingRecord();
+    }
+}

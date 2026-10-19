@@ -1,0 +1,21 @@
+package leonardo.banking_transactions.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+import leonardo.banking_transactions.entity.AccountsEntity;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface AccountsRepository extends JpaRepository<AccountsEntity, UUID> {
+    boolean existsByBranchAndAccountNumber(String branch, String accountNumber);
+    List<AccountsEntity> findByUserId(UUID userId);
+    Optional<AccountsEntity> findByIdAndUserId(UUID id, UUID userId);
+    boolean existsByIdAndUserId(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<AccountsEntity> findAllByIdInOrderByIdAsc(Collection<UUID> ids);
+}

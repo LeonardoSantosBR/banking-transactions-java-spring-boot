@@ -1,0 +1,11 @@
+package leonardo.banking_transactions.exception.users;
+
+import org.springframework.http.HttpStatus;
+
+import leonardo.banking_transactions.config.api.ApiException;
+
+public class UserNotAllowedException extends ApiException {
+    public UserNotAllowedException() {
+        super(HttpStatus.FORBIDDEN, "User is not authorized to access this resource");
+    }
+}
