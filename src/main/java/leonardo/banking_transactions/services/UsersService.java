@@ -5,9 +5,6 @@ import leonardo.banking_transactions.entities.UserTokenVersionsEntity;
 import leonardo.banking_transactions.exceptions.users.UserDataConflictExistingRecord;
 import leonardo.banking_transactions.exceptions.users.UserNotAllowedException;
 import leonardo.banking_transactions.exceptions.users.UserNotFoundException;
-import leonardo.banking_transactions.exceptions.validations.InvalidCredentialsException;
-import leonardo.banking_transactions.dtos.login.LoginRequest;
-import leonardo.banking_transactions.dtos.login.LoginResponse;
 import leonardo.banking_transactions.dtos.users.UserCreateRequest;
 import leonardo.banking_transactions.dtos.users.UserUpdateRequest;
 import leonardo.banking_transactions.repositories.UsersRepository;
@@ -25,17 +22,14 @@ public class UsersService {
     private final UsersRepository usersRepository;
     private final UserTokenVersionsRepository tokenVersionsRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
 
     public UsersService(
             UsersRepository usersRepository,
-            UserTokenVersionsRepository tokenVersionsRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
+            UserTokenVersionsRepository userTokenVersionsRepository,
+            PasswordEncoder passwordEncoder) {
         this.usersRepository = usersRepository;
-        this.tokenVersionsRepository = tokenVersionsRepository;
+        this.tokenVersionsRepository = userTokenVersionsRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -65,7 +59,18 @@ public class UsersService {
     }
 
     @Transactional
-    public UsersEntity update(UUID id, UsersEntity user) {
+    public UsersEntity update(UUID id, UserUpdateRequest request) {
+        UsersEntity user = new UsersEntity();
+        user.setName(request.name());
+        user.setCpf(request.cpf());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setPassword(request.password());
+        return updateUserEntity(id, user);
+    }
+
+    @Transactional
+    private UsersEntity updateUserEntity(UUID id, UsersEntity user) {
         UsersEntity currentUser = findById(id);
         validateUniqueFields(user, id);
         currentUser.setName(user.getName());
@@ -77,30 +82,6 @@ public class UsersService {
             incrementTokenVersion(id);
         }
         return usersRepository.save(currentUser);
-    }
-
-    @Transactional
-    public UsersEntity update(UUID id, UserUpdateRequest request) {
-        UsersEntity user = new UsersEntity();
-        user.setName(request.name());
-        user.setCpf(request.cpf());
-        user.setEmail(request.email());
-        user.setPhone(request.phone());
-        user.setPassword(request.password());
-        return update(id, user);
-    }
-
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
-        UsersEntity user = usersRepository
-                .findByCpfAndDeletedAtIsNull(request.cpf())
-                .orElseThrow(InvalidCredentialsException::new);
-        if (!passwordEncoder.matches(request.password(), user.getPassword()))
-            throw new InvalidCredentialsException();
-        int tokenVersion = tokenVersionsRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalStateException("Token version is missing for user"))
-                .getTokenVersion();
-        return new LoginResponse(jwtService.generateToken(user, tokenVersion));
     }
 
     @Transactional

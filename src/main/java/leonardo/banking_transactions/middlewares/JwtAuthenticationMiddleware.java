@@ -24,7 +24,7 @@ import java.util.UUID;
 @Component
 public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
     public static final String AUTHENTICATED_USER_ID_ATTRIBUTE = "authenticatedUserId";
-    private static final Set<String> PUBLIC_ENDPOINTS = Set.of("POST /api/users", "POST /api/auth/login");
+    private static final Set<String> PUBLIC_ENDPOINTS = Set.of("POST /api/users", "POST /api/auth/signin");
     private static final String USERS_PATH = "/api/users/";
     private static final String ACCOUNTS_PATH = "/api/accounts/";
     private final JwtService jwtService;
