@@ -74,6 +74,22 @@ On Windows:
 
 Flyway applies migrations automatically on startup.
 
+
+## Swagger / OpenAPI
+
+With the application running, access the interactive API documentation at:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+The OpenAPI specification is available at:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
+Swagger UI and OpenAPI documentation routes are public and do not require a JWT.
 ## Main endpoints
 
 ```text
