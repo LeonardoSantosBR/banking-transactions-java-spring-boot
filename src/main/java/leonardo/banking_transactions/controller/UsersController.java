@@ -21,11 +21,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Users", description = "User operations")
 @RequestMapping("/api/users")
 public class UsersController {
     private final UsersService usersService;
@@ -34,6 +38,7 @@ public class UsersController {
         this.usersService = usersService;
     }
 
+    @Operation(summary = "User endpoint")
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
         UsersEntity createdUser = usersService.create(request);
@@ -44,16 +49,19 @@ public class UsersController {
         return ResponseEntity.created(location).body(UserResponse.from(createdUser));
     }
 
+    @Operation(summary = "Query users")
     @GetMapping
     public ResponseEntity<List<UserSummaryResponse>> findAll() {
         return ResponseEntity.ok(usersService.findAllActive().stream().map(UserSummaryResponse::from).toList());
     }
 
+    @Operation(summary = "Query users")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(UserResponse.from(usersService.findById(id)));
     }
 
+    @Operation(summary = "Update user")
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(
             @PathVariable UUID id,
@@ -61,6 +69,7 @@ public class UsersController {
         return ResponseEntity.ok(UserResponse.from(usersService.update(id, request)));
     }
 
+    @Operation(summary = "Delete user")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id, HttpServletRequest request) {
         UUID authenticatedUserId = (UUID) request.getAttribute(

@@ -53,7 +53,12 @@ public class JwtAuthenticationMiddleware extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        return PUBLIC_ENDPOINTS.contains(request.getMethod() + " " + path);
+        String methodAndPath = request.getMethod() + " " + path;
+
+        return PUBLIC_ENDPOINTS.contains(methodAndPath)
+                || path.equals("/swagger-ui.html")
+                || path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs");
     }
 
     @Override

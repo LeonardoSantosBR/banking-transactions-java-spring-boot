@@ -9,6 +9,9 @@ import leonardo.banking_transactions.service.PixKeysService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Pix keys", description = "Pix key operations")
 @RequestMapping("/api/pix-keys/{accountId}")
 public class PixKeysController {
     private final PixKeysService pixKeysService;
@@ -24,6 +28,7 @@ public class PixKeysController {
         this.pixKeysService = pixKeysService;
     }
 
+    @Operation(summary = "Pix key endpoint")
     @PostMapping
     public ResponseEntity<PixKeyResponse> create(
             @PathVariable UUID accountId,
@@ -35,6 +40,7 @@ public class PixKeysController {
         return ResponseEntity.created(location).body(PixKeyResponse.from(key));
     }
 
+    @Operation(summary = "Query Pix keys")
     @GetMapping
     public List<PixKeyResponse> findAll(
             @PathVariable UUID accountId,
@@ -43,6 +49,7 @@ public class PixKeysController {
                 .map(PixKeyResponse::from).toList();
     }
 
+    @Operation(summary = "Query Pix keys")
     @GetMapping("/{id}")
     public PixKeyResponse findById(
             @PathVariable UUID accountId,
@@ -51,6 +58,7 @@ public class PixKeysController {
         return PixKeyResponse.from(pixKeysService.findById(authenticatedUserId, accountId, id));
     }
 
+    @Operation(summary = "Update Pix key")
     @PutMapping("/{id}")
     public PixKeyResponse update(
             @PathVariable UUID accountId,
@@ -60,6 +68,7 @@ public class PixKeysController {
         return PixKeyResponse.from(pixKeysService.update(authenticatedUserId, accountId, id, request));
     }
 
+    @Operation(summary = "Delete Pix key")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID accountId,

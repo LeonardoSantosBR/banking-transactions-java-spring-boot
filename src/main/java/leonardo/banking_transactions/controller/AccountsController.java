@@ -8,6 +8,9 @@ import leonardo.banking_transactions.service.AccountsService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@Tag(name = "Accounts", description = "Account operations")
 @RequestMapping("/api/accounts/{userId}")
 public class AccountsController {
     private final AccountsService accountsService;
@@ -23,6 +27,7 @@ public class AccountsController {
         this.accountsService = accountsService;
     }
 
+    @Operation(summary = "Account endpoint")
     @PostMapping
     public ResponseEntity<AccountResponse> create(
             @PathVariable UUID userId,
@@ -34,6 +39,7 @@ public class AccountsController {
         return ResponseEntity.created(location).body(AccountResponse.from(account));
     }
 
+    @Operation(summary = "Query accounts")
     @GetMapping
     public ResponseEntity<List<AccountResponse>> findAll(
             @PathVariable UUID userId,
@@ -42,6 +48,7 @@ public class AccountsController {
                 .map(AccountResponse::from).toList());
     }
 
+    @Operation(summary = "Query accounts")
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> findById(
             @PathVariable UUID userId,
@@ -50,6 +57,7 @@ public class AccountsController {
         return ResponseEntity.ok(AccountResponse.from(accountsService.findById(authenticatedUserId, accountId)));
     }
 
+    @Operation(summary = "Delete account")
     @DeleteMapping("/{accountId}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID userId,

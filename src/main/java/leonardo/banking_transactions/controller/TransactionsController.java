@@ -5,6 +5,9 @@ import leonardo.banking_transactions.service.TransactionsService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.UUID;
@@ -24,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 
 @RestController
+@Tag(name = "Pix transactions", description = "Pix transaction operations")
 @RequestMapping("/api/transactions")
 public class TransactionsController {
     private final TransactionsService transactionsService;
@@ -32,6 +36,7 @@ public class TransactionsController {
         this.transactionsService = service;
     }
 
+    @Operation(summary = "Pix transaction endpoint")
     @PostMapping
     public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionCreateRequest request) {
         var transaction = transactionsService.create(request);
@@ -42,6 +47,7 @@ public class TransactionsController {
         return ResponseEntity.created(location).body(TransactionResponse.from(transaction));
     }
 
+    @Operation(summary = "Query Pix transactions")
     @GetMapping
     public Page<TransactionResponse> findAll(
             @RequestParam(required = false) TransactionStatusEnum status,
@@ -64,11 +70,13 @@ public class TransactionsController {
                 amountFrom, amountTo, txid, endToEndId, pageable).map(TransactionResponse::from);
     }
 
+    @Operation(summary = "Query Pix transactions")
     @GetMapping("/{id}")
     public TransactionResponse findById(@PathVariable UUID id, HttpServletRequest request) {
         return TransactionResponse.from(transactionsService.findById(id, authenticatedUserId(request)));
     }
 
+    @Operation(summary = "Pix transaction endpoint")
     @PostMapping("/{id}/refund")
     public ResponseEntity<TransactionResponse> refund(@PathVariable UUID id, HttpServletRequest request) {
         var refund = transactionsService.refund(id, authenticatedUserId(request));
