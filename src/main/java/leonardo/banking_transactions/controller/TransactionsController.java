@@ -25,7 +25,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import jakarta.servlet.http.HttpServletRequest;
 
-
 @RestController
 @Tag(name = "Pix transactions", description = "Pix transaction operations")
 @RequestMapping("/api/transactions")
@@ -38,8 +37,12 @@ public class TransactionsController {
 
     @Operation(summary = "Pix transaction endpoint")
     @PostMapping
-    public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionCreateRequest request) {
-        var transaction = transactionsService.create(request);
+    public ResponseEntity<TransactionResponse> create(
+            HttpServletRequest request,
+            @Valid @RequestBody TransactionCreateRequest requestBody) {
+        UUID authenticatedUserId = (UUID) request
+                .getAttribute(JwtAuthenticationMiddleware.AUTHENTICATED_USER_ID_ATTRIBUTE);
+        var transaction = transactionsService.create(authenticatedUserId, requestBody);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -80,7 +83,8 @@ public class TransactionsController {
     @PostMapping("/{id}/refund")
     public ResponseEntity<TransactionResponse> refund(@PathVariable UUID id, HttpServletRequest request) {
         var refund = transactionsService.refund(id, authenticatedUserId(request));
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{refundId}").buildAndExpand(refund.getId()).toUri();
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{refundId}")
+                .buildAndExpand(refund.getId()).toUri();
         return ResponseEntity.created(location).body(TransactionResponse.from(refund));
     }
 

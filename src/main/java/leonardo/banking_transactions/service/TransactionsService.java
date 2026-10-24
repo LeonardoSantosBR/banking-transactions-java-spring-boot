@@ -56,44 +56,44 @@ public class TransactionsService {
         this.pixPayloadValidator = pixPayloadValidator;
     }
 
-    public TransactionsEntity create(TransactionCreateRequest request) {
-        var existing = transactionsRepository.findByIdempotencyKey(request.idempotencyKey());
+    public TransactionsEntity create(UUID payerId,TransactionCreateRequest requestBody) {
+        var existing = transactionsRepository.findByIdempotencyKey(requestBody.idempotencyKey());
         if (existing.isPresent())
             return existing.get();
         try {
-            return transactionTemplate.execute(status -> createInTransaction(request));
+            return transactionTemplate.execute(status -> createInTransaction(payerId, requestBody));
         } catch (DataIntegrityViolationException exception) {
             return transactionsRepository
-                    .findByIdempotencyKey(request.idempotencyKey())
+                    .findByIdempotencyKey(requestBody.idempotencyKey())
                     .orElseThrow(TransactionDataConflictExistingRecord::new);
         }
     }
 
-    private TransactionsEntity createInTransaction(TransactionCreateRequest request) {
-        if (request.payerAccountId().equals(request.payeeAccountId()))
+    private TransactionsEntity createInTransaction(UUID payerId, TransactionCreateRequest body) {
+        if (body.payerAccountId().equals(body.payeeAccountId()))
             throw new InvalidTransactionException("Payer and payee accounts must be different");
-        var payer = accountsRepository.findById(request.payerAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.payerAccountId()));
-        var payee = accountsRepository.findById(request.payeeAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.payeeAccountId()));
-        var pixKey = pixKeysRepository.findByKeyValueAndActiveTrue(request.pixKeyUsed())
+        var payer = accountsRepository.findByIdAndUserId(body.payerAccountId(), payerId)
+                .orElseThrow(() -> new AccountNotFoundException(body.payerAccountId()));
+        var payee = accountsRepository.findById(body.payeeAccountId())
+                .orElseThrow(() -> new AccountNotFoundException(body.payeeAccountId()));
+        var pixKey = pixKeysRepository.findByKeyValueAndActiveTrue(body.pixKeyUsed())
                 .orElseThrow(() -> new InvalidTransactionException("Pix key is invalid or inactive"));
         if (!pixKey.getAccount().getId().equals(payee.getId()))
             throw new InvalidTransactionException("Pix key does not belong to payee account");
-        pixPayloadValidator.validate(request.qrCodeType(), request.qrCodePayload(), request.txid());
+        pixPayloadValidator.validate(body.qrCodeType(), body.qrCodePayload(), body.txid());
         var t = new TransactionsEntity();
         t.setEndToEndId("E" + UUID.randomUUID().toString().replace("-", ""));
-        t.setIdempotencyKey(request.idempotencyKey());
+        t.setIdempotencyKey(body.idempotencyKey());
         t.setPayerAccount(payer);
         t.setPayeeAccount(payee);
-        t.setPixKeyUsed(request.pixKeyUsed());
-        t.setAmount(request.amount());
-        t.setQrCodeType(request.qrCodeType() == null ? null : request.qrCodeType().name());
-        t.setQrCodePayload(request.qrCodePayload());
-        t.setTxid(request.txid());
-        t.setCurrency(request.currency() == null ? "BRL" : request.currency().name());
-        t.setChannel(request.channel() == null ? null : request.channel().name());
-        t.setDescription(request.description());
+        t.setPixKeyUsed(body.pixKeyUsed());
+        t.setAmount(body.amount());
+        t.setQrCodeType(body.qrCodeType() == null ? null : body.qrCodeType().name());
+        t.setQrCodePayload(body.qrCodePayload());
+        t.setTxid(body.txid());
+        t.setCurrency(body.currency() == null ? "BRL" : body.currency().name());
+        t.setChannel(body.channel() == null ? null : body.channel().name());
+        t.setDescription(body.description());
         var transaction = transactionsRepository.save(t);
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("amount", transaction.getAmount());
