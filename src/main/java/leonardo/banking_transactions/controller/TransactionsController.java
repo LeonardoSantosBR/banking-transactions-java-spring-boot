@@ -1,7 +1,6 @@
 package leonardo.banking_transactions.controller;
 
 import jakarta.validation.Valid;
-import leonardo.banking_transactions.service.TransactionsService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +17,7 @@ import leonardo.banking_transactions.dto.transactions.TransactionCreateRequest;
 import leonardo.banking_transactions.dto.transactions.TransactionResponse;
 import leonardo.banking_transactions.enums.TransactionStatusEnum;
 import leonardo.banking_transactions.middleware.JwtAuthenticationMiddleware;
+import leonardo.banking_transactions.service.transactions.TransactionsService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

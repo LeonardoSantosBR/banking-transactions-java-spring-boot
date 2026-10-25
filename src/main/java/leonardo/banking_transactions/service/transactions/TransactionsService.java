@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.service;
+package leonardo.banking_transactions.service.transactions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +14,9 @@ import leonardo.banking_transactions.exception.validations.InvalidTransactionExc
 import leonardo.banking_transactions.repository.AccountsRepository;
 import leonardo.banking_transactions.repository.PixKeysRepository;
 import leonardo.banking_transactions.repository.TransactionsRepository;
+import leonardo.banking_transactions.service.BalanceService;
+import leonardo.banking_transactions.service.PixPayloadValidator;
+import leonardo.banking_transactions.service.outbox.OutboxEventsService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;

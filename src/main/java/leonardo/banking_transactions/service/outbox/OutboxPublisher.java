@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.service;
+package leonardo.banking_transactions.service.outbox;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

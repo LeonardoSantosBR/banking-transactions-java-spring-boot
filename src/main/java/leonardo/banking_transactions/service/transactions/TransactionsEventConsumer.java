@@ -1,4 +1,4 @@
-package leonardo.banking_transactions.service;
+package leonardo.banking_transactions.service.transactions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,13 +18,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-public class TransactionEventConsumer {
-    private static final Logger log = LoggerFactory.getLogger(TransactionEventConsumer.class);
+public class TransactionsEventConsumer {
+    private static final Logger log = LoggerFactory.getLogger(TransactionsEventConsumer.class);
     private final SqsService sqsService;
     private final TransactionsService transactionsService;
     private final ObjectMapper objectMapper;
 
-    public TransactionEventConsumer(
+    public TransactionsEventConsumer(
             SqsService sqsService,
             TransactionsService transactionsService,
             ObjectMapper objectMapper) {
