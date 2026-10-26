@@ -27,7 +27,7 @@ public class AccountsController {
         this.accountsService = accountsService;
     }
 
-    @Operation(summary = "Account endpoint")
+    @Operation(summary = "Account endpoint", description = "Creates an account for the authenticated user.")
     @PostMapping
     public ResponseEntity<AccountResponse> create(
             @PathVariable UUID userId,
@@ -39,7 +39,7 @@ public class AccountsController {
         return ResponseEntity.created(location).body(AccountResponse.from(account));
     }
 
-    @Operation(summary = "Query accounts")
+    @Operation(summary = "Query accounts", description = "Returns all accounts belonging to the authenticated user.")
     @GetMapping
     public ResponseEntity<List<AccountResponse>> findAll(
             @PathVariable UUID userId,
@@ -48,7 +48,7 @@ public class AccountsController {
                 .map(AccountResponse::from).toList());
     }
 
-    @Operation(summary = "Query accounts")
+    @Operation(summary = "Query accounts", description = "Returns a specific account belonging to the authenticated user.")
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> findById(
             @PathVariable UUID userId,
@@ -57,7 +57,7 @@ public class AccountsController {
         return ResponseEntity.ok(AccountResponse.from(accountsService.findById(authenticatedUserId, accountId)));
     }
 
-    @Operation(summary = "Delete account")
+    @Operation(summary = "Delete account", description = "Deletes an account belonging to the authenticated user.")
     @DeleteMapping("/{accountId}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID userId,

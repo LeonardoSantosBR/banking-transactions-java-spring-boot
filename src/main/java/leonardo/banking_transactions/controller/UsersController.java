@@ -38,7 +38,7 @@ public class UsersController {
         this.usersService = usersService;
     }
 
-    @Operation(summary = "User endpoint")
+    @Operation(summary = "User endpoint", description = "Creates a new user account.")
     @PostMapping
     public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
         UsersEntity createdUser = usersService.create(request);
@@ -49,19 +49,19 @@ public class UsersController {
         return ResponseEntity.created(location).body(UserResponse.from(createdUser));
     }
 
-    @Operation(summary = "Query users")
+    @Operation(summary = "Query users", description = "Returns all active users in summary format.")
     @GetMapping
     public ResponseEntity<List<UserSummaryResponse>> findAll() {
         return ResponseEntity.ok(usersService.findAllActive().stream().map(UserSummaryResponse::from).toList());
     }
 
-    @Operation(summary = "Query users")
+    @Operation(summary = "Query users", description = "Returns a user by identifier.")
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(UserResponse.from(usersService.findById(id)));
     }
 
-    @Operation(summary = "Update user")
+    @Operation(summary = "Update user", description = "Updates the profile data of a user.")
     @PutMapping("/{id}")
     public ResponseEntity<UserResponse> update(
             @PathVariable UUID id,
@@ -69,7 +69,7 @@ public class UsersController {
         return ResponseEntity.ok(UserResponse.from(usersService.update(id, request)));
     }
 
-    @Operation(summary = "Delete user")
+    @Operation(summary = "Delete user", description = "Deletes a user when the authenticated user is authorized.")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id, HttpServletRequest request) {
         UUID authenticatedUserId = (UUID) request.getAttribute(

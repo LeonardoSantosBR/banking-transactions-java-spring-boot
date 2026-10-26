@@ -28,7 +28,7 @@ public class PixKeysController {
         this.pixKeysService = pixKeysService;
     }
 
-    @Operation(summary = "Pix key endpoint")
+    @Operation(summary = "Pix key endpoint", description = "Creates a Pix key for an account owned by the authenticated user.")
     @PostMapping
     public ResponseEntity<PixKeyResponse> create(
             @PathVariable UUID accountId,
@@ -40,7 +40,7 @@ public class PixKeysController {
         return ResponseEntity.created(location).body(PixKeyResponse.from(key));
     }
 
-    @Operation(summary = "Query Pix keys")
+    @Operation(summary = "Query Pix keys", description = "Returns a specific Pix key registered for an account owned by the authenticated user.")
     @GetMapping
     public List<PixKeyResponse> findAll(
             @PathVariable UUID accountId,
@@ -49,7 +49,7 @@ public class PixKeysController {
                 .map(PixKeyResponse::from).toList();
     }
 
-    @Operation(summary = "Query Pix keys")
+    @Operation(summary = "Query Pix keys", description = "Returns Pix keys registered for an account owned by the authenticated user.")
     @GetMapping("/{id}")
     public PixKeyResponse findById(
             @PathVariable UUID accountId,
@@ -58,7 +58,7 @@ public class PixKeysController {
         return PixKeyResponse.from(pixKeysService.findById(authenticatedUserId, accountId, id));
     }
 
-    @Operation(summary = "Update Pix key")
+    @Operation(summary = "Update Pix key", description = "Updates a Pix key registered for an account owned by the authenticated user.")
     @PutMapping("/{id}")
     public PixKeyResponse update(
             @PathVariable UUID accountId,
@@ -68,7 +68,7 @@ public class PixKeysController {
         return PixKeyResponse.from(pixKeysService.update(authenticatedUserId, accountId, id, request));
     }
 
-    @Operation(summary = "Delete Pix key")
+    @Operation(summary = "Delete Pix key", description = "Deletes a Pix key registered for an account owned by the authenticated user.")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID accountId,

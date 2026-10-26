@@ -21,13 +21,13 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Authentication endpoint")
+    @Operation(summary = "Authentication endpoint", description = "Authenticates a user or refreshes an existing authentication session.")
     @PostMapping("/signin")
     public ResponseEntity<SigninResponse> signin(@Valid @RequestBody SigninRequest request) {
         return ResponseEntity.ok(authService.signin(request));
     }
 
-    @Operation(summary = "Authentication endpoint")
+    @Operation(summary = "Authentication endpoint", description = "Authenticates a user or refreshes an existing authentication session.")
     @PostMapping("/refresh")
     public ResponseEntity<SigninResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refresh(request));

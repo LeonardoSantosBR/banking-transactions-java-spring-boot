@@ -35,7 +35,7 @@ public class TransactionsController {
         this.transactionsService = service;
     }
 
-    @Operation(summary = "Pix transaction endpoint")
+    @Operation(summary = "Pix transaction endpoint", description = "Creates a Pix transaction for the authenticated user.")
     @PostMapping
     public ResponseEntity<TransactionResponse> create(
             HttpServletRequest request,
@@ -50,7 +50,16 @@ public class TransactionsController {
         return ResponseEntity.created(location).body(TransactionResponse.from(transaction));
     }
 
-    @Operation(summary = "Query Pix transactions")
+    @Operation(summary = "Pix transaction endpoint", description = "Refunds an eligible Pix transaction and returns the created refund transaction.")
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<TransactionResponse> refund(@PathVariable UUID id, HttpServletRequest request) {
+        var refund = transactionsService.refund(id, authenticatedUserId(request));
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{refundId}")
+                .buildAndExpand(refund.getId()).toUri();
+        return ResponseEntity.created(location).body(TransactionResponse.from(refund));
+    }
+
+    @Operation(summary = "Query Pix transactions", description = "Returns a specific Pix transaction belonging to the authenticated user.")
     @GetMapping
     public Page<TransactionResponse> findAll(
             @RequestParam(required = false) TransactionStatusEnum status,
@@ -73,19 +82,10 @@ public class TransactionsController {
                 amountFrom, amountTo, txid, endToEndId, pageable).map(TransactionResponse::from);
     }
 
-    @Operation(summary = "Query Pix transactions")
+    @Operation(summary = "Query Pix transactions", description = "Returns a paginated list of the authenticated user's Pix transactions with optional filters.")
     @GetMapping("/{id}")
     public TransactionResponse findById(@PathVariable UUID id, HttpServletRequest request) {
         return TransactionResponse.from(transactionsService.findById(id, authenticatedUserId(request)));
-    }
-
-    @Operation(summary = "Pix transaction endpoint")
-    @PostMapping("/{id}/refund")
-    public ResponseEntity<TransactionResponse> refund(@PathVariable UUID id, HttpServletRequest request) {
-        var refund = transactionsService.refund(id, authenticatedUserId(request));
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{refundId}")
-                .buildAndExpand(refund.getId()).toUri();
-        return ResponseEntity.created(location).body(TransactionResponse.from(refund));
     }
 
     private UUID authenticatedUserId(HttpServletRequest request) {
