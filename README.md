@@ -30,6 +30,7 @@ Transactions are intended to be persisted together with an outbox event. A publi
 - PostgreSQL and Flyway
 - Amazon SQS SDK for Java 2.x
 - Amazon SNS SDK for Java 2.x
+- Amazon S3 SDK for Java 2.x (private user avatars)
 - Maven
 
 ## Requirements
@@ -47,7 +48,33 @@ aws.region=us-east-1
 aws.sqs.transaction-queue-url=https://sqs.us-east-1.amazonaws.com/<account>/banking-transactions-events.fifo
 aws.sqs.transaction-dlq-url=https://sqs.us-east-1.amazonaws.com/<account>/banking-transactions-events-dlq.fifo
 aws.sns.transaction-topic-arn=arn:aws:sns:us-east-1:<account>:banking-transactions-notifications
+aws.s3.bucket=<private-bucket-name>
 ```
+
+User avatars are stored in a private Amazon S3 bucket. The API saves only the
+object key in `users.avatar_url`, for example
+`avatars/<uuid>/jpg`; it does not expose a public S3 URL. Configure the bucket
+with `AWS_S3_BUCKET` or `aws.s3.bucket` and grant the application only the
+required S3 permissions. The AWS SDK uses the standard credential provider
+chain.
+
+The user creation and update endpoints accept `multipart/form-data`:
+
+```text
+POST /api/users
+PUT  /api/users/{id}
+
+name       Text
+cpf        Text
+email      Text
+phone      Text (optional)
+password   Text (optional on update)
+avatar_url File (optional image, maximum 5 MB)
+```
+
+When a new avatar is uploaded during an update, the previous object is removed
+from S3 after the user record is updated. Omitting `avatar_url` preserves the
+current avatar.
 
 The SNS topic should be `Standard` for notification fan-out. To receive test
 notifications by email, create an `Email` subscription on the topic and click
