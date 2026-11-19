@@ -6,7 +6,6 @@ import leonardo.banking_transactions.dto.users.UserSummaryResponse;
 import leonardo.banking_transactions.dto.users.UserUpdateRequest;
 import leonardo.banking_transactions.entity.UsersEntity;
 import leonardo.banking_transactions.middleware.JwtAuthenticationMiddleware;
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import leonardo.banking_transactions.service.UsersService;
 
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
