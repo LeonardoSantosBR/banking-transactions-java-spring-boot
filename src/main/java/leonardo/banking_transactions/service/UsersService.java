@@ -18,7 +18,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.io.IOException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -27,16 +26,19 @@ public class UsersService {
     private final UserTokenVersionsRepository tokenVersionsRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Service s3Service;
+    private final AvatarService avatarService;
 
     public UsersService(
             UsersRepository usersRepository,
             UserTokenVersionsRepository userTokenVersionsRepository,
             PasswordEncoder passwordEncoder,
-            S3Service s3Service) {
+            S3Service s3Service,
+            AvatarService avatarService) {
         this.usersRepository = usersRepository;
         this.tokenVersionsRepository = userTokenVersionsRepository;
         this.passwordEncoder = passwordEncoder;
         this.s3Service = s3Service;
+        this.avatarService = avatarService;
     }
 
     @Transactional
@@ -48,14 +50,7 @@ public class UsersService {
         user.setPhone(request.phone());
         user.setPassword(passwordEncoder.encode(request.password()));
         if (avatar != null && !avatar.isEmpty()) {
-            validateAvatar(avatar);
-            String objectKey = "avatars/" + UUID.randomUUID() + "/" + fileExtension(avatar.getOriginalFilename());
-            try {
-                s3Service.upload(objectKey, avatar.getBytes(), avatar.getContentType());
-            } catch (IOException exception) {
-                throw new IllegalStateException("Could not read avatar file", exception);
-            }
-            user.setAvatarUrl(objectKey);
+            user.setAvatarUrl(avatarService.upload(avatar));
         }
         validateUniqueFields(user, null);
         UsersEntity savedUser = usersRepository.save(user);
@@ -76,11 +71,6 @@ public class UsersService {
     }
 
     @Transactional
-    public UsersEntity update(UUID id, UserUpdateRequest request) {
-        return update(id, request, null);
-    }
-
-    @Transactional
     public UsersEntity update(UUID id, UserUpdateRequest request, MultipartFile avatar) {
         UsersEntity user = new UsersEntity();
         user.setName(request.name());
@@ -92,8 +82,7 @@ public class UsersService {
         String previousAvatarUrl = currentUser.getAvatarUrl();
         updateUserEntity(currentUser, user);
         if (avatar != null && !avatar.isEmpty()) {
-            validateAvatar(avatar);
-            currentUser.setAvatarUrl(uploadAvatar(avatar));
+            currentUser.setAvatarUrl(avatarService.upload(avatar));
         }
         UsersEntity savedUser = usersRepository.save(currentUser);
         if (avatar != null && !avatar.isEmpty() && previousAvatarUrl != null) {
@@ -123,34 +112,6 @@ public class UsersService {
         user.setDeletedAt(OffsetDateTime.now());
         incrementTokenVersion(id);
         usersRepository.save(user);
-    }
-
-    private void validateAvatar(MultipartFile avatar) {
-        if (avatar.getContentType() == null || !avatar.getContentType().startsWith("image/")) {
-            throw new IllegalArgumentException("Avatar must be an image");
-        }
-        if (avatar.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("Avatar must not exceed 5 MB");
-        }
-    }
-
-    private String fileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "image";
-        }
-        return filename.substring(filename.lastIndexOf('.') + 1)
-                .replaceAll("[^a-zA-Z0-9]", "")
-                .toLowerCase();
-    }
-
-    private String uploadAvatar(MultipartFile avatar) {
-        String objectKey = "avatars/" + UUID.randomUUID() + "/" + fileExtension(avatar.getOriginalFilename());
-        try {
-            s3Service.upload(objectKey, avatar.getBytes(), avatar.getContentType());
-            return objectKey;
-        } catch (IOException exception) {
-            throw new IllegalStateException("Could not read avatar file", exception);
-        }
     }
 
     private void incrementTokenVersion(UUID userId) {
