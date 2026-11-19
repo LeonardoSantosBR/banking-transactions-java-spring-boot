@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
 public class AwsConfig {
@@ -23,5 +24,10 @@ public class AwsConfig {
     @Bean(destroyMethod = "close")
     SnsClient snsClient(@Value("${aws.region}") String region) {
         return SnsClient.builder().region(Region.of(region)).build();
+    }
+
+    @Bean(destroyMethod = "close")
+    S3Client s3Client(@Value("${aws.region}") String region) {
+        return S3Client.builder().region(Region.of(region)).build();
     }
 }

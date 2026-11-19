@@ -46,6 +46,9 @@ public class UsersEntity {
     @JsonIgnore
     private String password;
 
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

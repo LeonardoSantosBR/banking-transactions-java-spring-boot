@@ -11,11 +11,12 @@ public record UserResponse(
         String cpf,
         String email,
         String phone,
+        String avatarUrl,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt) {
 
     public static UserResponse from(UsersEntity user) {
-        return new UserResponse(user.getId(), user.getName(), user.getCpf(), user.getEmail(), user.getPhone(),
+        return new UserResponse(user.getId(), user.getName(), user.getCpf(), user.getEmail(), user.getPhone(), user.getAvatarUrl(),
                 user.getCreatedAt(), user.getUpdatedAt());
     }
 }

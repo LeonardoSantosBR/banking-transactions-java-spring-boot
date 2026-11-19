@@ -17,8 +17,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,8 +31,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @RestController
+@Validated
 @Tag(name = "Users", description = "User operations")
 @RequestMapping("/api/users")
 public class UsersController {
@@ -39,9 +47,16 @@ public class UsersController {
     }
 
     @Operation(summary = "User endpoint", description = "Creates a new user account.")
-    @PostMapping
-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
-        UsersEntity createdUser = usersService.create(request);
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<UserResponse> create(
+            @RequestParam @NotBlank @Size(max = 150) String name,
+            @RequestParam @NotBlank @Size(max = 11) String cpf,
+            @RequestParam @NotBlank @Email @Size(max = 150) String email,
+            @RequestParam(required = false) @Size(max = 20) String phone,
+            @RequestParam @NotBlank @Size(min = 6, max = 100) String password,
+            @RequestPart(value = "avatar_url", required = false) MultipartFile avatar) {
+        UserCreateRequest request = new UserCreateRequest(name, cpf, email, phone, password);
+        UsersEntity createdUser = usersService.create(request, avatar);
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
@@ -62,11 +77,17 @@ public class UsersController {
     }
 
     @Operation(summary = "Update user", description = "Updates the profile data of a user.")
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     public ResponseEntity<UserResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(UserResponse.from(usersService.update(id, request)));
+            @RequestParam @NotBlank @Size(max = 150) String name,
+            @RequestParam @NotBlank @Size(max = 11) String cpf,
+            @RequestParam @NotBlank @Email @Size(max = 150) String email,
+            @RequestParam(required = false) @Size(max = 20) String phone,
+            @RequestParam(required = false) @Size(min = 6, max = 100) String password,
+            @RequestPart(value = "avatar_url", required = false) MultipartFile avatar) {
+        UserUpdateRequest request = new UserUpdateRequest(name, cpf, email, phone, password);
+        return ResponseEntity.ok(UserResponse.from(usersService.update(id, request, avatar)));
     }
 
     @Operation(summary = "Delete user", description = "Deletes a user when the authenticated user is authorized.")

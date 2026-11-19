@@ -32,7 +32,7 @@ import java.util.Map;
 @Component
 public class RateLimitMiddleware extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(RateLimitMiddleware.class);
-    private static final int MAX_BODY_BYTES = 8192;
+    private static final int MAX_BODY_BYTES = 6 * 1024 * 1024;
     private static final int MAX_CPF_LENGTH = 32;
     private static final String UNAVAILABLE_MESSAGE = "Request processing is temporarily unavailable.";
     private final RateLimitService rateLimitService;
@@ -61,8 +61,10 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
             FilterChain chain) throws ServletException, IOException {
         RateLimitOperationConfig operation = RateLimitOperationConfig.fromPath(request.getServletPath());
         String cpf = "";
-        byte[] body = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
-        if (body.length > MAX_BODY_BYTES) {
+        boolean multipartRequest = request.getContentType() != null
+                && request.getContentType().toLowerCase().startsWith(MediaType.MULTIPART_FORM_DATA_VALUE);
+        byte[] body = multipartRequest ? new byte[0] : request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);
+        if (!multipartRequest && body.length > MAX_BODY_BYTES) {
             if (!recordEvent(request, cpf, eventType(operation, 413))) {
                 writeError(response, 503, UNAVAILABLE_MESSAGE);
                 return;
@@ -70,13 +72,21 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
             writeError(response, 413, "Request body is too large.");
             return;
         }
-        try {
-            JsonNode node = objectMapper.readTree(body);
-            if (node != null && node.hasNonNull("cpf")) {
-                String rawCpf = node.get("cpf").asText("");
-                cpf = rawCpf.length() > MAX_CPF_LENGTH ? rawCpf.substring(0, MAX_CPF_LENGTH) : rawCpf;
+        if (multipartRequest) {
+            cpf = request.getParameter("cpf");
+            if (cpf == null)
+                cpf = "";
+            else if (cpf.length() > MAX_CPF_LENGTH)
+                cpf = cpf.substring(0, MAX_CPF_LENGTH);
+        } else {
+            try {
+                JsonNode node = objectMapper.readTree(body);
+                if (node != null && node.hasNonNull("cpf")) {
+                    String rawCpf = node.get("cpf").asText("");
+                    cpf = rawCpf.length() > MAX_CPF_LENGTH ? rawCpf.substring(0, MAX_CPF_LENGTH) : rawCpf;
+                }
+            } catch (JsonProcessingException ignored) {
             }
-        } catch (JsonProcessingException ignored) {
         }
         try {
             rateLimitService.checkAndConsume(operation, request.getRemoteAddr(), cpf);
@@ -95,7 +105,7 @@ public class RateLimitMiddleware extends OncePerRequestFilter {
 
         ContentCachingResponseWrapper bufferedResponse = new ContentCachingResponseWrapper(response);
         try {
-            chain.doFilter(new CachedBodyRequest(request, body), bufferedResponse);
+            chain.doFilter(multipartRequest ? request : new CachedBodyRequest(request, body), bufferedResponse);
         } catch (IOException | ServletException | RuntimeException exception) {
             recordEvent(request, cpf, eventType(operation, 503));
             throw exception;
